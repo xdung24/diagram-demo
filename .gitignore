@@ -1,0 +1,6 @@
+/diagram-demo
+*.exe
+*.test
+*.out
+*.tmp
+.env
