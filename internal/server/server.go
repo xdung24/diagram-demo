@@ -16,6 +16,7 @@ func CreateHttpServer(publicFS fs.FS, svc *service.Service) http.Handler {
 
 	sub, err := fs.Sub(publicFS, "public")
 	if err == nil {
+		mux.Handle("/diagram/", http.StripPrefix("/diagram/", http.FileServer(http.Dir("./public/diagram"))))
 		fileServer := http.FileServer(http.FS(sub))
 		mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 			if r.URL.Path == "/" || r.URL.Path == "/index.html" {
@@ -44,10 +45,9 @@ func CreateHttpServer(publicFS fs.FS, svc *service.Service) http.Handler {
 				writeJSON(w, http.StatusInternalServerError, map[string]any{"error": sanitizeError(err)})
 				return
 			}
-			log.Printf("Tools listed successfully: %v", tools)
 			writeJSON(w, http.StatusOK, map[string]any{"tools": tools})
 		})
-		logging.LoggingMiddleware(handler).ServeHTTP(w, r)
+		handler.ServeHTTP(w, r)
 	})
 
 	mux.HandleFunc("/api/generate", func(w http.ResponseWriter, r *http.Request) {
@@ -73,10 +73,9 @@ func CreateHttpServer(publicFS fs.FS, svc *service.Service) http.Handler {
 				writeJSON(w, http.StatusBadRequest, map[string]any{"error": sanitizeError(err)})
 				return
 			}
-			log.Printf("Diagram generated successfully: %s", summarizePayload(res))
 			writeJSON(w, http.StatusOK, map[string]any{"result": res, "generatedCode": res["generatedCode"]})
 		})
-		logging.LoggingMiddleware(handler).ServeHTTP(w, r)
+		handler.ServeHTTP(w, r)
 	})
 
 	mux.HandleFunc("/api/render", func(w http.ResponseWriter, r *http.Request) {
@@ -102,10 +101,9 @@ func CreateHttpServer(publicFS fs.FS, svc *service.Service) http.Handler {
 				writeJSON(w, http.StatusBadRequest, map[string]any{"error": sanitizeError(err)})
 				return
 			}
-			log.Printf("Diagram rendered successfully: %s", summarizePayload(res))
 			writeJSON(w, http.StatusOK, map[string]any{"result": res})
 		})
-		logging.LoggingMiddleware(handler).ServeHTTP(w, r)
+		handler.ServeHTTP(w, r)
 	})
 
 	mux.HandleFunc("/api/logs/stream", func(w http.ResponseWriter, r *http.Request) {
@@ -127,7 +125,7 @@ func CreateHttpServer(publicFS fs.FS, svc *service.Service) http.Handler {
 				flusher.Flush()
 			}
 		})
-		logging.LoggingMiddleware(handler).ServeHTTP(w, r)
+		handler.ServeHTTP(w, r)
 	})
 
 	return logging.LoggingMiddleware(mux)

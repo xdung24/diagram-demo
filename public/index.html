@@ -115,10 +115,10 @@
     async function generateDiagram() {
       setStatus('Generating…');
       try {
-        const data = await request('/api/generate', { prompt: promptEl.value, tool: 'generate_mermaid_diagram', params: {} });
+        const data = await request('/api/generate', { prompt: promptEl.value, tool: 'generate_diagram', params: {} });
         codeEl.value = data.generatedCode || codeEl.value;
-        if (data.result && data.result.content) {
-          renderContent(data.result.content);
+        if (data.result && (data.result.content || data.result.structuredContent)) {
+          renderContent(data.result.content || data.result.structuredContent);
         }
         setStatus('Ready');
       } catch (err) {
@@ -130,8 +130,27 @@
     async function renderDiagram() {
       setStatus('Rendering…');
       try {
-        const data = await request('/api/render', { tool: 'generate_mermaid_diagram', code: codeEl.value, params: {} });
-        renderContent(data.result && data.result.content ? data.result.content : []);
+        const data = await request('/api/render', { tool: 'generate_diagram', code: codeEl.value, params: {} });
+        if (data.result && data.result.svgPath) {
+          outputEl.innerHTML = '';
+          const img = document.createElement('img');
+          img.src = data.result.svgPath;
+          img.alt = 'Rendered diagram';
+          img.style.maxWidth = '100%';
+          outputEl.appendChild(img);
+          if (data.result.mmdPath) {
+            const link = document.createElement('a');
+            link.href = data.result.mmdPath;
+            link.textContent = 'Download MMD file';
+            link.target = '_blank';
+            link.style.display = 'block';
+            link.style.marginTop = '0.75rem';
+            outputEl.appendChild(link);
+          }
+          setStatus('Ready');
+          return;
+        }
+        renderContent(data.result && (data.result.content || data.result.structuredContent) ? (data.result.content || data.result.structuredContent) : data.result || []);
         setStatus('Ready');
       } catch (err) {
         setError(err.message);
@@ -140,7 +159,18 @@
     }
 
     function renderContent(content) {
-      const text = Array.isArray(content) ? content.map((item) => item.text || item.data || JSON.stringify(item)).join('\n') : (content || '');
+      if (!Array.isArray(content)) {
+        content = [content];
+      }
+      const text = content.map((item) => {
+        if (typeof item === 'string') {
+          return item;
+        }
+        if (item && typeof item === 'object') {
+          return item.text || item.data || JSON.stringify(item, null, 2);
+        }
+        return String(item);
+      }).join('\n');
       const svg = text.match(/<svg[\s\S]*<\/svg>/i);
       if (svg) {
         outputEl.innerHTML = svg[0];

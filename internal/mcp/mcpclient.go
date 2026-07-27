@@ -107,22 +107,75 @@ func (c *McpClient) ListTools(ctx context.Context) ([]Tool, error) {
 
 // CallTool executes an MCP tool and returns the parsed response payload.
 func (c *McpClient) CallTool(ctx context.Context, name string, args map[string]any) (map[string]any, error) {
-	var out struct {
-		Content []struct {
-			Type string `json:"type"`
-			Text string `json:"text,omitempty"`
-			Data string `json:"data,omitempty"`
-		} `json:"content"`
-		IsError bool `json:"isError,omitempty"`
-	}
+	var out map[string]any
 	if err := c.callMethod(ctx, "tools/call", map[string]any{"name": name, "arguments": args}, &out); err != nil {
 		return nil, err
 	}
-	if out.IsError {
+	if isError, ok := out["isError"].(bool); ok && isError {
+		msg := ""
+		if m, ok := out["message"].(string); ok && m != "" {
+			msg = m
+		}
+		if errVal, ok := out["error"].(string); ok && errVal != "" {
+			msg = errVal
+		}
+		if errMap, ok := out["error"].(map[string]any); ok {
+			if m, ok := errMap["message"].(string); ok && m != "" {
+				msg = m
+			}
+		}
+		if msg != "" {
+			return nil, fmt.Errorf("tool %s returned error: %s", name, msg)
+		}
 		return nil, fmt.Errorf("tool %s returned error", name)
 	}
-	result := map[string]any{"content": out.Content}
-	return result, nil
+	content, contentExists := out["content"]
+	if !contentExists || content == nil {
+		if structured, ok := out["structuredContent"]; ok {
+			out["content"] = structured
+		}
+	}
+	return out, nil
+}
+
+// GenerateDiagram calls the server's generate_diagram tool.
+func (c *McpClient) GenerateDiagram(ctx context.Context, content, outputPath string) (map[string]any, error) {
+	return c.CallTool(ctx, "generate_diagram", map[string]any{
+		"content":    content,
+		"outputPath": outputPath,
+	})
+}
+
+// ValidateDiagram calls the server's validate_diagram tool.
+func (c *McpClient) ValidateDiagram(ctx context.Context, content, path string) (map[string]any, error) {
+	args := make(map[string]any)
+	if content != "" {
+		args["content"] = content
+	}
+	if path != "" {
+		args["path"] = path
+	}
+	return c.CallTool(ctx, "validate_diagram", args)
+}
+
+// ParseDiagram calls the server's parse_diagram tool.
+func (c *McpClient) ParseDiagram(ctx context.Context, content, path string) (map[string]any, error) {
+	args := make(map[string]any)
+	if content != "" {
+		args["content"] = content
+	}
+	if path != "" {
+		args["path"] = path
+	}
+	return c.CallTool(ctx, "parse_diagram", args)
+}
+
+// SuggestDiagramType calls the server's suggest_diagram_type tool.
+func (c *McpClient) SuggestDiagramType(ctx context.Context, requirement string) (map[string]any, error) {
+	if requirement == "" {
+		return nil, fmt.Errorf("requirement is required")
+	}
+	return c.CallTool(ctx, "suggest_diagram_type", map[string]any{"requirement": requirement})
 }
 
 // Tools returns the cached tool list.
