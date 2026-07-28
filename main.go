@@ -14,6 +14,7 @@ import (
 
 	"github.com/joho/godotenv"
 
+	"github.com/xdung24/diagram-demo/internal/mcp"
 	"github.com/xdung24/diagram-demo/internal/server"
 	"github.com/xdung24/diagram-demo/internal/service"
 )
@@ -56,12 +57,9 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	binary := "./diagram-mcp"
-	if _, err := os.Stat(binary); err != nil {
-		binary = "diagram-mcp"
-		if _, err := os.Stat(binary); err != nil {
-			binary = "diagram-mcp.exe"
-		}
+	binary, err := mcp.FindDiagramMCPBinary()
+	if err != nil {
+		log.Printf("failed to locate or download diagram-mcp: %v", err)
 	}
 
 	diagramService, err := service.New(ctx, binary, diagramType+"-mcp")
