@@ -6,12 +6,9 @@ import (
 	"io/fs"
 	"log"
 	"net/http"
-
-	"github.com/xdung24/diagram-demo/internal/logging"
-	"github.com/xdung24/diagram-demo/internal/service"
 )
 
-func CreateHttpServer(publicFS fs.FS, svc *service.Service) http.Handler {
+func CreateHttpServer(publicFS fs.FS, svc *Service) http.Handler {
 	mux := http.NewServeMux()
 
 	sub, err := fs.Sub(publicFS, "public")
@@ -19,10 +16,10 @@ func CreateHttpServer(publicFS fs.FS, svc *service.Service) http.Handler {
 		mux.Handle("/diagram/", http.StripPrefix("/diagram/", http.FileServer(http.Dir("./public/diagram"))))
 		fileServer := http.FileServer(http.FS(sub))
 		mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/" || r.URL.Path == "/index.html" {
-				w.Header().Set("Content-Type", "text/html; charset=utf-8")
-				http.ServeFileFS(w, r, publicFS, "public/index.html")
-				return
+			// Add cache control headers to .ico, .css, .js, and .png files
+			contentType := r.Header.Get("Content-Type")
+			if r.Method == http.MethodGet && (contentType == "image/x-icon" || contentType == "text/css" || contentType == "application/javascript" || contentType == "image/png" || contentType == "image/jpeg") {
+				w.Header().Set("Cache-Control", "public, max-age=31536000") // Cache for 1 year
 			}
 			fileServer.ServeHTTP(w, r)
 		})
@@ -37,7 +34,7 @@ func CreateHttpServer(publicFS fs.FS, svc *service.Service) http.Handler {
 				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 				return
 			}
-			ctx, cancel := service.NewContext()
+			ctx, cancel := NewContext()
 			defer cancel()
 			tools, err := svc.ListTools(ctx)
 			if err != nil {
@@ -65,7 +62,7 @@ func CreateHttpServer(publicFS fs.FS, svc *service.Service) http.Handler {
 				http.Error(w, "bad request", http.StatusBadRequest)
 				return
 			}
-			ctx, cancel := service.NewContext()
+			ctx, cancel := NewContext()
 			defer cancel()
 			res, err := svc.Generate(ctx, req.Prompt, req.Tool, req.Params)
 			if err != nil {
@@ -93,7 +90,7 @@ func CreateHttpServer(publicFS fs.FS, svc *service.Service) http.Handler {
 				http.Error(w, "bad request", http.StatusBadRequest)
 				return
 			}
-			ctx, cancel := service.NewContext()
+			ctx, cancel := NewContext()
 			defer cancel()
 			res, err := svc.Render(ctx, req.Tool, req.Code, req.Params)
 			if err != nil {
@@ -128,5 +125,5 @@ func CreateHttpServer(publicFS fs.FS, svc *service.Service) http.Handler {
 		handler.ServeHTTP(w, r)
 	})
 
-	return logging.LoggingMiddleware(mux)
+	return LoggingMiddleware(statusPageMiddleware(mux, publicFS))
 }

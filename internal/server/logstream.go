@@ -1,4 +1,4 @@
-package logging
+package server
 
 import (
 	"sync"
@@ -12,7 +12,7 @@ type Stream struct {
 	entries     []string
 }
 
-func New() *Stream {
+func NewLogStream() *Stream {
 	return &Stream{subscribers: make(map[chan string]struct{})}
 }
 

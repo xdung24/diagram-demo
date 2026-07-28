@@ -1,4 +1,4 @@
-package service
+package server
 
 import (
 	"context"
@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/xdung24/diagram-demo/internal/ai"
-	"github.com/xdung24/diagram-demo/internal/logging"
 	"github.com/xdung24/diagram-demo/internal/mcp"
 )
 
@@ -19,12 +18,12 @@ import (
 type Service struct {
 	mcpclient *mcp.McpClient
 	llmclient *ai.AIClient
-	logStream *logging.Stream
+	logStream *Stream
 	binary    string
 }
 
 // New creates a service and starts the MCP child process.
-func New(ctx context.Context, binary string, args ...string) (*Service, error) {
+func NewDiagramService(ctx context.Context, binary string, args ...string) (*Service, error) {
 	mcpclient, err := mcp.NewMcpClient(ctx, binary, args...)
 	if err != nil {
 		return nil, err
@@ -33,7 +32,7 @@ func New(ctx context.Context, binary string, args ...string) (*Service, error) {
 	svc := &Service{
 		mcpclient: mcpclient,
 		llmclient: ai.NewClient(),
-		logStream: logging.New(),
+		logStream: NewLogStream(),
 		binary:    binary,
 	}
 	return svc, nil
@@ -191,7 +190,7 @@ func (s *Service) Generate(ctx context.Context, prompt string, toolName string, 
 }
 
 // Logs returns the log stream used by the HTTP layer.
-func (s *Service) Logs() *logging.Stream {
+func (s *Service) Logs() *Stream {
 	return s.logStream
 }
 
@@ -229,15 +228,4 @@ func MarshalPayload(v any) map[string]any {
 // NewContext creates a request-scoped context with timeout.
 func NewContext() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.Background(), 45*time.Second)
-}
-
-func sanitizeError(err error) string {
-	if err == nil {
-		return ""
-	}
-	msg := err.Error()
-	msg = strings.ReplaceAll(msg, "\n", " ")
-	msg = strings.ReplaceAll(msg, "\r", " ")
-	msg = strings.ReplaceAll(msg, "\\", "/")
-	return strings.TrimSpace(msg)
 }

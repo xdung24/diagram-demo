@@ -1,61 +1,204 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-	<head>
-		<meta charset="UTF-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<title>403 Forbidden</title>
-    <style>
-        @import url("https://fonts.googleapis.com/css?family=Press+Start+2P");
-        html,
-        body {
-            width: 100%;
-            height: 100%;
-            margin: 0;
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Diagram MCP Demo</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+    .panel-transition { transition: all 180ms ease; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+  <div class="max-w-7xl mx-auto p-6 space-y-4">
+    <header class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-semibold">Diagram MCP Demo</h1>
+        <p class="text-sm text-slate-400">Generate, render, and debug diagrams.</p>
+      </div>
+      <div class="text-sm text-slate-400" id="status">Connecting…</div>
+    </header>
+
+    <div class="grid gap-4 lg:grid-cols-[minmax(280px,0.8fr)_minmax(560px,1.2fr)]">
+      <section class="rounded-xl border border-slate-800 bg-slate-900 p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-lg font-semibold">Editor</h2>
+            <p class="text-xs text-slate-400">Prompt and source code</p>
+          </div>
+          <button id="toggleEditor" class="text-sm text-slate-400 hover:text-slate-200">Collapse</button>
+        </div>
+
+        <div id="editorContent" class="space-y-3 panel-transition">
+          <label class="text-sm font-medium">Prompt</label>
+          <textarea id="prompt" rows="3" class="w-full rounded-lg border border-slate-700 bg-slate-950 p-3 text-sm" placeholder="Describe the diagram you want to create"></textarea>
+          <div class="flex flex-wrap gap-2">
+            <button id="generate" class="rounded-lg bg-slate-600 px-3 py-2 text-sm font-medium hover:bg-slate-500">Generate</button>
+          </div>
+
+          <label class="text-sm font-medium">Diagram code</label>
+          <textarea id="code" rows="12" class="w-full rounded-lg border border-slate-700 bg-slate-950 p-3 font-mono text-sm" spellcheck="false"></textarea>
+          <div class="flex flex-wrap gap-2">
+            <button id="render" class="rounded-lg bg-slate-700 px-3 py-2 text-sm font-medium hover:bg-slate-600">Render</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="rounded-xl border border-slate-800 bg-slate-900 p-4 space-y-3 lg:min-h-[640px]">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-lg font-semibold">Preview</h2>
+            <p class="text-xs text-slate-400">Primary view</p>
+          </div>
+          <div class="text-xs text-slate-400">SVG output</div>
+        </div>
+        <div id="output" class="min-h-[360px] rounded-lg border border-slate-800 bg-white p-3 text-slate-900 overflow-auto lg:min-h-[560px]"></div>
+        <div id="error" class="rounded-lg border border-rose-800 bg-rose-950/40 p-3 text-sm text-rose-200 hidden"></div>
+      </section>
+    </div>
+
+    <section class="rounded-xl border border-slate-800 bg-slate-900 p-4">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="text-lg font-semibold">MCP Debugger / Logs</h2>
+        <button id="toggleLogs" class="text-sm text-slate-400">Collapse</button>
+      </div>
+      <div id="logs" class="rounded-lg border border-slate-800 bg-slate-950 p-3 text-xs font-mono max-h-64 overflow-auto"></div>
+    </section>
+  </div>
+
+  <script>
+    const statusEl = document.getElementById('status');
+    const promptEl = document.getElementById('prompt');
+    const codeEl = document.getElementById('code');
+    const outputEl = document.getElementById('output');
+    const errorEl = document.getElementById('error');
+    const logsEl = document.getElementById('logs');
+ 
+    function setStatus(text) {
+      statusEl.textContent = text;
+    }
+
+    function setError(text) {
+      if (!text) {
+        errorEl.classList.add('hidden');
+        errorEl.textContent = '';
+        return;
+      }
+      errorEl.classList.remove('hidden');
+      errorEl.textContent = text;
+    }
+
+    function appendLog(text) {
+      const row = document.createElement('div');
+      row.textContent = text;
+      logsEl.prepend(row);
+      if (logsEl.children.length > 100) {
+        logsEl.removeChild(logsEl.lastChild);
+      }
+    }
+
+    async function request(path, body) {
+      const options = body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : { method: 'GET' };
+      const res = await fetch(path, options);
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'request failed');
+      }
+      return data;
+    }
+
+    async function generateDiagram() {
+      setStatus('Generating…');
+      try {
+        const data = await request('/api/generate', { prompt: promptEl.value, tool: 'generate_diagram', params: {} });
+        codeEl.value = data.generatedCode || codeEl.value;
+        if (data.result && (data.result.content || data.result.structuredContent)) {
+          renderContent(data.result.content || data.result.structuredContent);
         }
-        * {
-            font-family: 'Press Start 2P', cursive;
-            box-sizing: border-box;
+        setStatus('Ready');
+      } catch (err) {
+        setError(err.message);
+        setStatus('Error');
+      }
+    }
+
+    async function renderDiagram() {
+      setStatus('Rendering…');
+      try {
+        const data = await request('/api/render', { tool: 'generate_diagram', code: codeEl.value, params: {} });
+        if (data.result && data.result.svgPath) {
+          outputEl.innerHTML = '';
+          const img = document.createElement('img');
+          img.src = data.result.svgPath;
+          img.alt = 'Rendered diagram';
+          img.style.maxWidth = '100%';
+          outputEl.appendChild(img);
+          if (data.result.mmdPath) {
+            const link = document.createElement('a');
+            link.href = data.result.mmdPath;
+            link.target = '_blank';
+            link.style.display = 'block';
+            link.style.marginTop = '0.75rem';
+            outputEl.appendChild(link);
+          }
+          setStatus('Ready');
+          return;
         }
-        #app {
-            padding: 1rem;
-            background: black;
-            display: flex;
-            height: 100%;
-            justify-content: center;
-            align-items: center;
-            color: #54FE55;
-            text-shadow: 0px 0px 10px;
-            font-size: 6rem;
-            flex-direction: column;
+        renderContent(data.result && (data.result.content || data.result.structuredContent) ? (data.result.content || data.result.structuredContent) : data.result || []);
+        setStatus('Ready');
+      } catch (err) {
+        setError(err.message);
+        setStatus('Error');
+      }
+    }
+
+    function renderContent(content) {
+      if (!Array.isArray(content)) {
+        content = [content];
+      }
+      const text = content.map((item) => {
+        if (typeof item === 'string') {
+          return item;
         }
-        #app .txt {
-            font-size: 1.8rem;
+        if (item && typeof item === 'object') {
+          return item.text || item.data || JSON.stringify(item, null, 2);
         }
-        @keyframes blink {
-            0% {
-                opacity: 0;
-            }
-            49% {
-                opacity: 0;
-            }
-            50% {
-                opacity: 1;
-            }
-            100% {
-                opacity: 1;
-            }
-        }
-        .blink {
-            animation-name: blink;
-            animation-duration: 1s;
-            animation-iteration-count: infinite;
-        }
-    </style>
-	</head>
-	<body>
-		<div id="app">
-			<div>403</div>
-			<div class="txt"> Forbidden<span class="blink">_</span> </div>
-		</div>
-	</body>
+        return String(item);
+      }).join('\n');
+      const svg = text.match(/<svg[\s\S]*<\/svg>/i);
+      if (svg) {
+        outputEl.innerHTML = svg[0];
+      } else {
+        outputEl.innerHTML = '<pre class="text-sm whitespace-pre-wrap">' + text.replace(/</g, '&lt;') + '</pre>';
+      }
+      setError('');
+    }
+
+    document.getElementById('generate').addEventListener('click', generateDiagram);
+    document.getElementById('render').addEventListener('click', renderDiagram);
+
+    const editorContentEl = document.getElementById('editorContent');
+    const editorToggleEl = document.getElementById('toggleEditor');
+
+    editorToggleEl.addEventListener('click', () => {
+      const collapsed = editorContentEl.style.display === 'none';
+      editorContentEl.style.display = collapsed ? 'block' : 'none';
+      editorToggleEl.textContent = collapsed ? 'Collapse' : 'Expand';
+    });
+
+    document.getElementById('toggleLogs').addEventListener('click', () => {
+      const collapsed = logsEl.style.display === 'none';
+      logsEl.style.display = collapsed ? 'block' : 'none';
+      document.getElementById('toggleLogs').textContent = collapsed ? 'Expand' : 'Collapse';
+    });
+
+    const eventSource = new EventSource('/api/logs/stream');
+    eventSource.onopen = () => setStatus('Connected');
+    eventSource.onerror = () => setStatus('Connection issue');
+    eventSource.onmessage = (ev) => {
+      appendLog(ev.data);
+    };
+  </script>
+</body>
 </html>

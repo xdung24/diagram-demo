@@ -33,20 +33,15 @@
         <div id="editorContent" class="space-y-3 panel-transition">
           <label class="text-sm font-medium">Prompt</label>
           <textarea id="prompt" rows="3" class="w-full rounded-lg border border-slate-700 bg-slate-950 p-3 text-sm" placeholder="Describe the diagram you want to create"></textarea>
-
           <div class="flex flex-wrap gap-2">
-            <select id="example" class="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm">
-              <option value="">Select example</option>
-              <option value="flowchart">Flowchart</option>
-              <option value="sequence">Sequence diagram</option>
-              <option value="state">State diagram</option>
-            </select>
-            <button id="generate" class="rounded-lg bg-cyan-600 px-3 py-2 text-sm font-medium hover:bg-cyan-500">Generate</button>
-            <button id="render" class="rounded-lg bg-slate-700 px-3 py-2 text-sm font-medium hover:bg-slate-600">Render</button>
+            <button id="generate" class="rounded-lg bg-slate-600 px-3 py-2 text-sm font-medium hover:bg-slate-500">Generate</button>
           </div>
 
           <label class="text-sm font-medium">Diagram code</label>
           <textarea id="code" rows="12" class="w-full rounded-lg border border-slate-700 bg-slate-950 p-3 font-mono text-sm" spellcheck="false"></textarea>
+          <div class="flex flex-wrap gap-2">
+            <button id="render" class="rounded-lg bg-slate-700 px-3 py-2 text-sm font-medium hover:bg-slate-600">Render</button>
+          </div>
         </div>
       </section>
 
@@ -79,20 +74,7 @@
     const outputEl = document.getElementById('output');
     const errorEl = document.getElementById('error');
     const logsEl = document.getElementById('logs');
-    const exampleEl = document.getElementById('example');
-
-    const examples = {
-      flowchart: 'graph TD\nA[Start] --> B{Ready?}\nB -->|Yes| C[Render]\nB -->|No| D[Edit]\n',
-      sequence: 'sequenceDiagram\nAlice->>Bob: Hello\nBob-->>Alice: Hi\n',
-      state: 'stateDiagram-v2\n[*] --> Idle\nIdle --> Processing\nProcessing --> Done\n'
-    };
-
-    exampleEl.addEventListener('change', (e) => {
-      if (examples[e.target.value]) {
-        codeEl.value = examples[e.target.value];
-      }
-    });
-
+ 
     function setStatus(text) {
       statusEl.textContent = text;
     }

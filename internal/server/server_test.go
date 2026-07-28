@@ -8,18 +8,15 @@ import (
 	"testing"
 	"time"
 	"unsafe"
-
-	"github.com/xdung24/diagram-demo/internal/logging"
-	"github.com/xdung24/diagram-demo/internal/service"
 )
 
 func TestLogsStreamEndpointFlusher(t *testing.T) {
-	svc := &service.Service{}
+	svc := &Service{}
 	v := reflect.ValueOf(svc).Elem().FieldByName("logStream")
 	if !v.IsValid() {
 		t.Fatal("logStream field not found")
 	}
-	reflect.NewAt(v.Type(), unsafe.Pointer(v.UnsafeAddr())).Elem().Set(reflect.ValueOf(logging.New()))
+	reflect.NewAt(v.Type(), unsafe.Pointer(v.UnsafeAddr())).Elem().Set(reflect.ValueOf(NewLogStream()))
 	h := CreateHttpServer(nil, svc)
 	ts := httptest.NewServer(h)
 	defer ts.Close()

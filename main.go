@@ -16,7 +16,6 @@ import (
 
 	"github.com/xdung24/diagram-demo/internal/mcp"
 	"github.com/xdung24/diagram-demo/internal/server"
-	"github.com/xdung24/diagram-demo/internal/service"
 )
 
 var version = "dev"
@@ -73,7 +72,7 @@ func main() {
 		log.Printf("failed to locate or download diagram-mcp: %v", err)
 	}
 
-	diagramService, err := service.New(ctx, binary, diagramType+"-mcp")
+	diagramService, err := server.NewDiagramService(ctx, binary, diagramType+"-mcp")
 	if err != nil {
 		log.Printf("failed to start MCP client: %v", err)
 		os.Exit(1)
