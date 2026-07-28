@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Diagram MCP Detail</title>
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width,initial-scale=1" />
+		<title>Diagram MCP Detail</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
@@ -13,12 +13,10 @@
   <div class="max-w-7xl mx-auto p-6 space-y-6">
     <header class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
       <div>
-        <h1 class="text-2xl font-semibold">Diagram detail</h1>
-        <p class="text-sm text-slate-400">View, update, and delete a diagram from the /diagram route.</p>
+        <a href="/"><h1 class="text-2xl font-semibold">Diagram MCP Demo</h1></a>
       </div>
       <div class="flex items-center gap-2">
-        <a href="/" class="rounded-lg border border-slate-700 px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800">Back to landing page</a>
-        <span id="status" class="text-sm text-slate-400">Loading…</span>
+        <span class="text-sm text-slate-400">Generate your diagram with AI</span>
       </div>
     </header>
 
@@ -26,27 +24,27 @@
       <div class="rounded-xl border border-slate-800 bg-slate-900 p-5 space-y-4">
         <div class="flex items-center justify-between">
           <div>
-            <h2 class="text-lg font-semibold">Editor</h2>
+            <h2 class="text-lg font-semibold" id="detailTitle">Editor</h2>
             <p class="text-xs text-slate-400">Update the selected diagram content.</p>
           </div>
-          <button id="deleteBtn" class="rounded-lg border border-rose-700 px-3 py-2 text-sm font-medium text-rose-200 hover:bg-rose-950/40">Delete</button>
-        </div>
-
+          <div>
+            <button type="button" id="saveBtn" class="rounded-lg bg-slate-600 px-3 py-2 text-sm font-medium hover:bg-slate-500">Save changes</button>
+            <button type="button" id="deleteBtn" class="rounded-lg border border-rose-700 px-3 py-2 text-sm font-medium text-rose-200 hover:bg-rose-950/40">Delete</button>
+          </div>
+      </div>
         <form id="detailForm" class="space-y-3">
           <label class="block text-sm">
-            <span class="mb-1 block text-slate-300">Title</span>
-            <input id="detailTitle" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm" required />
+            <span class="mb-1 block text-slate-300">Description</span>
+            <textarea id="detailDescription" rows="3" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm"></textarea>
           </label>
-          <label class="block text-sm">
-            <span class="mb-1 block text-slate-300">Prompt</span>
-            <textarea id="detailPrompt" rows="3" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm"></textarea>
-          </label>
+          <div class="flex flex-wrap gap-2">
+            <button type="button" id="generateBtn" class="rounded-lg border border-slate-700 px-3 py-2 text-sm font-medium hover:bg-slate-800">Generate diagram</button>
+          </div>
           <label class="block text-sm">
             <span class="mb-1 block text-slate-300">Diagram code</span>
             <textarea id="detailCode" rows="12" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 font-mono text-sm" spellcheck="false"></textarea>
           </label>
           <div class="flex flex-wrap gap-2">
-            <button type="submit" class="rounded-lg bg-slate-600 px-3 py-2 text-sm font-medium hover:bg-slate-500">Save changes</button>
             <button type="button" id="renderBtn" class="rounded-lg border border-slate-700 px-3 py-2 text-sm font-medium hover:bg-slate-800">Render preview</button>
           </div>
         </form>
@@ -66,13 +64,8 @@
   </div>
 
   <script>
-    const statusEl = document.getElementById('status');
     const outputEl = document.getElementById('output');
     const errorEl = document.getElementById('error');
-
-    function setStatus(text) {
-      statusEl.textContent = text;
-    }
 
     function setError(text) {
       if (!text) {
@@ -93,34 +86,53 @@
       return data;
     }
 
-    async function loadDiagram() {
+    // Save button
+    document.getElementById('saveBtn').addEventListener('click', async (event) => {
       const pathParts = window.location.pathname.split('/').filter(Boolean);
       const slug = pathParts.length > 1 ? pathParts[1] : '';
-      const id = slug || new URLSearchParams(window.location.search).get('id');
-      if (!id) {
-        outputEl.innerHTML = '<div class="text-sm text-slate-600">Pick a diagram from the landing page or create a new one first.</div>';
-        setStatus('No diagram selected');
+      try {
+        await requestJson(`/api/diagram/${encodeURIComponent(slug)}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            description: document.getElementById('detailDescription').value.trim(),
+            code: document.getElementById('detailCode').value.trim(),
+          }),
+        });
+      } catch (err) {
+      }
+    });
+
+    // Generate button
+    document.getElementById('generateBtn').addEventListener('click', async () => {
+      const description = document.getElementById('detailDescription').value.trim();
+      if (!description) {
+        setError('Add a description first');
         return;
       }
-      setStatus('Loading…');
+      setError('');
       try {
-        const item = await requestJson(`/api/diagram/${encodeURIComponent(id)}`);
-        document.getElementById('detailTitle').value = item.title || '';
-        document.getElementById('detailPrompt').value = item.prompt || '';
-        document.getElementById('detailCode').value = item.code || '';
-        setStatus('Loaded');
+        const data = await requestJson('/api/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ description }),
+        });
+        const result = data.generatedCode || '';
+        document.getElementById('detailCode').value = result;
+        setError('');
       } catch (err) {
-        setStatus(err.message);
+        setError(err.message);
       }
-    }
-
-    async function renderDiagram() {
+    });
+    
+    // Render button
+    document.getElementById('renderBtn').addEventListener('click', async () => {
       const code = document.getElementById('detailCode').value;
       if (!code.trim()) {
         setError('Add some diagram code first');
         return;
       }
-      setStatus('Rendering…');
+      setError('');
       try {
         const data = await requestJson('/api/render', {
           method: 'POST',
@@ -136,57 +148,44 @@
           outputEl.innerHTML = '<div class="text-sm text-slate-600">Preview generated.</div>';
         }
         setError('');
-        setStatus('Ready');
       } catch (err) {
         setError(err.message);
-        setStatus('Error');
-      }
-    }
-
-    document.getElementById('detailForm').addEventListener('submit', async (event) => {
-      event.preventDefault();
-      const pathParts = window.location.pathname.split('/').filter(Boolean);
-      const slug = pathParts.length > 1 ? pathParts[1] : '';
-      const id = slug || new URLSearchParams(window.location.search).get('id');
-      if (!id) {
-        setStatus('Select a diagram first');
-        return;
-      }
-      setStatus('Saving…');
-      try {
-        await requestJson(`/api/diagram/${encodeURIComponent(id)}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            title: document.getElementById('detailTitle').value.trim(),
-            prompt: document.getElementById('detailPrompt').value.trim(),
-            code: document.getElementById('detailCode').value.trim(),
-          }),
-        });
-        setStatus('Saved');
-      } catch (err) {
-        setStatus(err.message);
       }
     });
 
-    document.getElementById('renderBtn').addEventListener('click', renderDiagram);
+    // Delete button
     document.getElementById('deleteBtn').addEventListener('click', async () => {
       const pathParts = window.location.pathname.split('/').filter(Boolean);
       const slug = pathParts.length > 1 ? pathParts[1] : '';
-      const id = slug || new URLSearchParams(window.location.search).get('id');
-      if (!id) {
-        setStatus('No diagram selected');
-        return;
-      }
-      try {
-        await requestJson(`/api/diagram/${encodeURIComponent(id)}`, { method: 'DELETE' });
-        window.location.href = '/';
-      } catch (err) {
-        setStatus(err.message);
+      if (confirm("Are you sure you want to delete this diagram?")) {
+        try {
+          await requestJson(`/api/diagram/${encodeURIComponent(slug)}`, { method: 'DELETE' });
+          window.location.href = '/';
+        } catch (err) {
+          setError(err.message);
+        }
       }
     });
 
+    async function loadDiagram() {
+      const pathParts = window.location.pathname.split('/').filter(Boolean);
+      const slug = pathParts.length > 1 ? pathParts[1] : '';
+      const id = slug || new URLSearchParams(window.location.search).get('id');
+      if (!id) {
+        outputEl.innerHTML = '<div class="text-sm text-slate-600">Pick a diagram from the landing page or create a new one first.</div>';
+        return;
+      }
+      try {
+        const item = await requestJson(`/api/diagram/${encodeURIComponent(id)}`);
+        document.getElementById('detailTitle').value = item.title || '';
+        document.getElementById('detailDescription').value = item.description || '';
+        document.getElementById('detailCode').value = item.code || '';
+      } catch (err) {
+        setError(err.message);
+      }
+    }
+
     loadDiagram();
   </script>
-</body>
+	</body>
 </html>

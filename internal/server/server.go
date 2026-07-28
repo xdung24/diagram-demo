@@ -120,7 +120,7 @@ func CreateHttpServer(publicFS fs.FS, svc *Service) http.Handler {
 				writeJSON(w, http.StatusBadRequest, map[string]any{"error": sanitizeError(err)})
 				return
 			}
-			writeJSON(w, http.StatusOK, map[string]any{"result": res, "generatedCode": res["generatedCode"]})
+			writeJSON(w, http.StatusOK, map[string]any{"generatedCode": res["generatedCode"]})
 		})
 		handler.ServeHTTP(w, r)
 	})

@@ -123,7 +123,7 @@ func TestPersistDiagramFolderUsesIDBasedDirectory(t *testing.T) {
 
 	svc := &Service{}
 	item := Diagram{Title: "My Diagram", Slug: "my-slug"}
-	if err := svc.persistDiagramFolder(item, ""); err != nil {
+	if err := svc.persistDiagramFolder(item); err != nil {
 		t.Fatalf("persist diagram folder: %v", err)
 	}
 

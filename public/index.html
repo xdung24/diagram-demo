@@ -50,7 +50,7 @@
           </label>
           <label class="block text-sm">
             <span class="mb-1 block text-slate-300">Description</span>
-            <textarea id="prompt" rows="3" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm" placeholder="Describe what the diagram should show"></textarea>
+            <textarea id="description" rows="3" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm" placeholder="Describe what the diagram should show"></textarea>
           </label>
           <div class="flex flex-wrap gap-2">
             <button type="submit" class="rounded-lg bg-slate-600 px-3 py-2 text-sm font-medium hover:bg-slate-500">Create diagram</button>
@@ -101,8 +101,8 @@
         <article class="rounded-lg border border-slate-800 bg-slate-950/70 p-4">
           <div class="flex items-start justify-between gap-3">
             <div>
-              <h3 class="font-medium">${item.title || 'Untitled diagram'}</h3>
-              <p class="mt-1 text-sm text-slate-400">${(item.prompt || '').slice(0, 100) || 'No prompt provided.'}</p>
+              <h3 class="font-medium">${item.title}</h3>
+              <p class="mt-1 text-sm text-slate-400">${(item.description || '').slice(0, 100) || 'No description provided.'}</p>
             </div>
             <span class="rounded-full bg-slate-800 px-2.5 py-1 text-[11px] uppercase tracking-wide text-slate-400">${new Date(item.updatedAt || item.createdAt).toLocaleDateString()}</span>
           </div>
@@ -128,7 +128,7 @@
       try {
         const payload = {
           title: document.getElementById('title').value.trim(),
-          prompt: document.getElementById('prompt').value.trim(),
+          description: document.getElementById('description').value.trim(),
           code: '',
         };
         const created = await requestJson('/api/diagrams', {
@@ -159,19 +159,6 @@
     });
 
     document.getElementById('refreshBtn').addEventListener('click', loadDiagrams);
-    listEl.addEventListener('click', async (event) => {
-      const button = event.target.closest('[data-delete-id]');
-      if (!button) return;
-      const id = button.getAttribute('data-delete-id');
-      try {
-        await requestJson(`/api/diagram/${encodeURIComponent(id)}`, { method: 'DELETE' });
-        await loadDiagrams();
-        setStatus('Deleted');
-      } catch (err) {
-        setStatus(err.message);
-      }
-    });
-
     loadDiagrams();
   </script>
 </body>

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -17,12 +18,12 @@ import (
 
 // Service holds the MCP client, log stream, and LLM integration for the demo server.
 type Diagram struct {
-	Title     string    `json:"title"`
-	Slug      string    `json:"slug"`
-	Prompt    string    `json:"prompt"`
-	Code      string    `json:"code"`
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
+	Title       string    `json:"title"`
+	Slug        string    `json:"slug"`
+	Description string    `json:"description"`
+	Code        string    `json:"code"`
+	CreatedAt   time.Time `json:"createdAt"`
+	UpdatedAt   time.Time `json:"updatedAt"`
 }
 
 type Service struct {
@@ -48,6 +49,35 @@ func NewDiagramService(ctx context.Context, binary string, args ...string) (*Ser
 		binary:    binary,
 		diagrams:  make(map[string]Diagram),
 	}
+
+	// Load list of diagrams from the public/diagram folder if it exists
+	log.Printf("loading diagrams from public/diagram folder")
+	publicRoot := resolvePublicRoot()
+	diagramRoot := filepath.Join(publicRoot, "diagram")
+	found := 0
+	now := time.Now().UTC()
+	if _, err := os.Stat(diagramRoot); err == nil {
+		entries, err := os.ReadDir(diagramRoot)
+		if err == nil {
+			for _, entry := range entries {
+				if entry.IsDir() {
+					diagramPath := filepath.Join(diagramRoot, entry.Name(), "diagram.json")
+					if _, err := os.Stat(diagramPath); err == nil {
+						data, err := os.ReadFile(diagramPath)
+						if err == nil {
+							var item Diagram
+							if err := json.Unmarshal(data, &item); err == nil {
+								svc.diagrams[item.Slug] = item
+								found++
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	elasped := time.Since(now)
+	log.Printf("loaded %d diagrams from public/diagram folder (%dms)", found, elasped.Milliseconds())
 	return svc, nil
 }
 
@@ -134,104 +164,9 @@ func (s *Service) renderMermaidToSVG(ctx context.Context, code string, params ma
 	}, nil
 }
 
-func resolvePublicRoot() string {
-	dir, err := os.Getwd()
-	if err != nil {
-		return filepath.Join(".", "public")
-	}
-	for {
-		if _, err := os.Stat(filepath.Join(dir, "public")); err == nil {
-			return filepath.Join(dir, "public")
-		}
-		parent := filepath.Dir(dir)
-		if parent == dir {
-			return filepath.Join(dir, "public")
-		}
-		dir = parent
-	}
-}
-
-func sanitizeFileName(name string) string {
-	name = strings.TrimSpace(name)
-	name = strings.ReplaceAll(name, " ", "-")
-	return strings.Map(func(r rune) rune {
-		if r == '-' || r == '_' || r == '.' || r == '+' || r == ' ' {
-			return r
-		}
-		if r >= '0' && r <= '9' {
-			return r
-		}
-		if r >= 'a' && r <= 'z' {
-			return r
-		}
-		if r >= 'A' && r <= 'Z' {
-			return r
-		}
-		return -1
-	}, name)
-}
-
-func slugifyTitle(title string) string {
-	text := strings.TrimSpace(strings.ToLower(title))
-	if text == "" {
-		return "diagram"
-	}
-
-	var builder strings.Builder
-	prevDash := false
-	for _, r := range text {
-		switch {
-		case r >= 'a' && r <= 'z', r >= '0' && r <= '9':
-			builder.WriteRune(r)
-			prevDash = false
-		default:
-			if builder.Len() > 0 && !prevDash {
-				builder.WriteRune('-')
-				prevDash = true
-			}
-		}
-	}
-	return strings.Trim(builder.String(), "-")
-}
-
-func normalizeToolName(toolName string) string {
-	if toolName == "generate_mermaid_diagram" {
-		return "generate_diagram"
-	}
-	return toolName
-}
-
-func isGenerateTool(toolName string) bool {
-	return toolName == "generate_diagram" || (strings.HasPrefix(toolName, "generate_") && strings.HasSuffix(toolName, "_diagram"))
-}
-
-func getOutputPath(args map[string]any) string {
-	if v, ok := args["outputPath"].(string); ok && v != "" {
-		return v
-	}
-	return ""
-}
-
-func enrichRenderResult(res map[string]any) map[string]any {
-	if content, ok := res["content"]; ok {
-		if content == nil {
-			return res
-		}
-		if m, ok := content.(map[string]any); ok {
-			if svgPath, ok := m["svgPath"].(string); ok && svgPath != "" {
-				if svgData, err := os.ReadFile(svgPath); err == nil {
-					res["svg"] = string(svgData)
-					res["content"] = string(svgData)
-				}
-			}
-		}
-	}
-	return res
-}
-
 // Generate asks Mermaid MCP to generate the diagram.
-func (s *Service) Generate(ctx context.Context, prompt string, toolName string, params map[string]any) (map[string]any, error) {
-	res, err := s.llmclient.GenerateDiagramCode(ctx, prompt)
+func (s *Service) Generate(ctx context.Context, description string, toolName string, params map[string]any) (map[string]any, error) {
+	res, err := s.llmclient.GenerateDiagramCode(ctx, description)
 	if err != nil {
 		return nil, fmt.Errorf("generating failed: %s", sanitizeError(err))
 	}
@@ -270,18 +205,18 @@ func (s *Service) CreateDiagram(input Diagram) (Diagram, error) {
 	if s == nil {
 		return Diagram{}, fmt.Errorf("service unavailable")
 	}
+	if input.Title == "" {
+		return Diagram{}, fmt.Errorf("diagram title is required")
+	}
 	s.ensureStore()
 	s.mu.Lock()
 	input.CreatedAt = time.Now().UTC()
 	input.UpdatedAt = input.CreatedAt
 	input.Title = strings.TrimSpace(input.Title)
-	if input.Title == "" {
-		input.Title = "Untitled diagram"
-	}
-	input.Prompt = strings.TrimSpace(input.Prompt)
+	input.Description = strings.TrimSpace(input.Description)
 	input.Code = strings.TrimSpace(input.Code)
 	input.Slug = slugifyTitle(input.Title)
-	if err := s.persistDiagramFolder(input, ""); err != nil {
+	if err := s.persistDiagramFolder(input); err != nil {
 		return Diagram{}, err
 	}
 	s.diagrams[input.Slug] = input
@@ -317,17 +252,11 @@ func (s *Service) UpdateDiagram(slug string, input Diagram) (Diagram, error) {
 		return Diagram{}, fmt.Errorf("diagram %s not found", slug)
 	}
 
-	previousSlug := current.Slug
-	current.Title = strings.TrimSpace(input.Title)
-	if current.Title == "" {
-		current.Title = "Untitled diagram"
-	}
-	current.Prompt = strings.TrimSpace(input.Prompt)
+	current.Description = strings.TrimSpace(input.Description)
 	current.Code = strings.TrimSpace(input.Code)
-	current.Slug = slugifyTitle(current.Title)
 	current.UpdatedAt = time.Now().UTC()
 
-	if err := s.persistDiagramFolder(current, previousSlug); err != nil {
+	if err := s.persistDiagramFolder(current); err != nil {
 		return Diagram{}, err
 	}
 	s.diagrams[current.Slug] = current
@@ -362,7 +291,7 @@ func diagramFolderName(item Diagram) string {
 	return sanitizeFileName(item.Slug)
 }
 
-func (s *Service) persistDiagramFolder(item Diagram, previousSlug string) error {
+func (s *Service) persistDiagramFolder(item Diagram) error {
 	publicRoot := resolvePublicRoot()
 	diagramRoot := filepath.Join(publicRoot, "diagram")
 	if err := os.MkdirAll(diagramRoot, 0o755); err != nil {
@@ -371,16 +300,6 @@ func (s *Service) persistDiagramFolder(item Diagram, previousSlug string) error 
 
 	folderName := diagramFolderName(item)
 	dirPath := filepath.Join(diagramRoot, folderName)
-	if previousSlug != "" && previousSlug != item.Slug {
-		oldDir := filepath.Join(diagramRoot, diagramFolderName(Diagram{Slug: previousSlug}))
-		if _, err := os.Stat(oldDir); err == nil {
-			if _, err := os.Stat(dirPath); os.IsNotExist(err) {
-				if err := os.Rename(oldDir, dirPath); err != nil {
-					return fmt.Errorf("rename diagram folder: %w", err)
-				}
-			}
-		}
-	}
 	if err := os.MkdirAll(dirPath, 0o755); err != nil {
 		return fmt.Errorf("create diagram folder: %w", err)
 	}
@@ -390,7 +309,8 @@ func (s *Service) persistDiagramFolder(item Diagram, previousSlug string) error 
 		"slug":        item.Slug,
 		"createdAt":   item.CreatedAt.Format(time.RFC3339),
 		"updatedAt":   item.UpdatedAt.Format(time.RFC3339),
-		"description": item.Prompt,
+		"description": item.Description,
+		"code":        item.Code,
 	}, "", "  ")
 	if err != nil {
 		return fmt.Errorf("marshal diagram metadata: %w", err)
@@ -413,32 +333,6 @@ func (s *Service) Close() error {
 		return nil
 	}
 	return s.mcpclient.Close()
-}
-
-func mergeArgs(params map[string]any, code string) map[string]any {
-	args := make(map[string]any, len(params)+4)
-	for k, v := range params {
-		args[k] = v
-	}
-	if code != "" {
-		args["content"] = code
-		args["code"] = code
-		args["diagramCode"] = code
-		args["input"] = code
-		args["prompt"] = code
-	}
-	return args
-}
-
-// MarshalPayload converts a value into a JSON-serializable payload for the UI.
-func MarshalPayload(v any) map[string]any {
-	payload, err := json.Marshal(v)
-	if err != nil {
-		return map[string]any{"error": "failed to encode response"}
-	}
-	var out map[string]any
-	_ = json.Unmarshal(payload, &out)
-	return out
 }
 
 // NewContext creates a request-scoped context with timeout.
