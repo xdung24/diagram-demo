@@ -25,16 +25,19 @@ type Tool struct {
 }
 
 // McpClient manages a child process running the diagram MCP server over stdio.
+const defaultGlobalInstructions = "instructions://global"
+
 type McpClient struct {
-	mu       sync.RWMutex
-	cmd      *exec.Cmd
-	stdin    io.WriteCloser
-	stdout   *bufio.Reader
-	stderr   io.Writer
-	closed   bool
-	seq      int64
-	tools    []Tool
-	initDone bool
+	mu              sync.RWMutex
+	cmd             *exec.Cmd
+	stdin           io.WriteCloser
+	stdout          *bufio.Reader
+	stderr          io.Writer
+	closed          bool
+	seq             int64
+	tools           []Tool
+	initDone        bool
+	instructionsURI string
 }
 
 // NewMcpClient starts the MCP server binary as a stdio child process.
@@ -52,10 +55,11 @@ func NewMcpClient(ctx context.Context, binary string, args ...string) (*McpClien
 	}
 
 	c := &McpClient{
-		cmd:    cmd,
-		stdin:  stdin,
-		stdout: bufio.NewReader(stdout),
-		stderr: &stderrWriter{},
+		cmd:             cmd,
+		stdin:           stdin,
+		stdout:          bufio.NewReader(stdout),
+		stderr:          &stderrWriter{},
+		instructionsURI: defaultGlobalInstructions,
 	}
 	if err := cmd.Start(); err != nil {
 		return nil, fmt.Errorf("start child process: %w", err)
@@ -71,11 +75,15 @@ func NewMcpClient(ctx context.Context, binary string, args ...string) (*McpClien
 
 // Initialize performs MCP initialization and tool discovery.
 func (c *McpClient) initialize(ctx context.Context) error {
-	if err := c.sendRequest(ctx, "initialize", map[string]any{
+	initParams := map[string]any{
 		"protocolVersion": "2025-03-26",
 		"capabilities":    map[string]any{},
 		"clientInfo":      map[string]any{"name": "diagram-demo-server", "version": "1.0.0"},
-	}); err != nil {
+	}
+	if c.instructionsURI != "" {
+		initParams["instructions"] = []string{c.instructionsURI}
+	}
+	if err := c.sendRequest(ctx, "initialize", initParams); err != nil {
 		return err
 	}
 
@@ -107,8 +115,17 @@ func (c *McpClient) ListTools(ctx context.Context) ([]Tool, error) {
 
 // CallTool executes an MCP tool and returns the parsed response payload.
 func (c *McpClient) CallTool(ctx context.Context, name string, args map[string]any) (map[string]any, error) {
+	callArgs := make(map[string]any, len(args)+1)
+	for k, v := range args {
+		callArgs[k] = v
+	}
+	if c.instructionsURI != "" {
+		if _, ok := callArgs["instructions"]; !ok {
+			callArgs["instructions"] = []string{c.instructionsURI}
+		}
+	}
 	var out map[string]any
-	if err := c.callMethod(ctx, "tools/call", map[string]any{"name": name, "arguments": args}, &out); err != nil {
+	if err := c.callMethod(ctx, "tools/call", map[string]any{"name": name, "arguments": callArgs}, &out); err != nil {
 		return nil, err
 	}
 	if isError, ok := out["isError"].(bool); ok && isError {

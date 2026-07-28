@@ -7,6 +7,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+    .panel-transition { transition: all 180ms ease; }
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen">
@@ -14,37 +15,50 @@
     <header class="flex items-center justify-between">
       <div>
         <h1 class="text-2xl font-semibold">Diagram MCP Demo</h1>
-        <p class="text-sm text-slate-400">Generate, render, and debug diagrams from one embedded Go server.</p>
+        <p class="text-sm text-slate-400">Generate, render, and debug diagrams.</p>
       </div>
       <div class="text-sm text-slate-400" id="status">Connecting…</div>
     </header>
 
-    <div class="grid lg:grid-cols-[1.15fr_0.85fr] gap-4">
-      <section class="rounded-xl border border-slate-800 bg-slate-900 p-4 space-y-3">
-        <label class="text-sm font-medium">Prompt</label>
-        <textarea id="prompt" rows="3" class="w-full rounded-lg border border-slate-700 bg-slate-950 p-3 text-sm" placeholder="Describe the diagram you want to create"></textarea>
-
-        <div class="flex flex-wrap gap-2">
-          <select id="example" class="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm">
-            <option value="">Select example</option>
-            <option value="flowchart">Flowchart</option>
-            <option value="sequence">Sequence diagram</option>
-            <option value="state">State diagram</option>
-          </select>
-          <button id="generate" class="rounded-lg bg-cyan-600 px-3 py-2 text-sm font-medium hover:bg-cyan-500">Generate</button>
-          <button id="render" class="rounded-lg bg-slate-700 px-3 py-2 text-sm font-medium hover:bg-slate-600">Render</button>
-        </div>
-
-        <label class="text-sm font-medium">Diagram code</label>
-        <textarea id="code" rows="16" class="w-full rounded-lg border border-slate-700 bg-slate-950 p-3 font-mono text-sm" spellcheck="false"></textarea>
-      </section>
-
+    <div class="grid gap-4 lg:grid-cols-[minmax(280px,0.8fr)_minmax(560px,1.2fr)]">
       <section class="rounded-xl border border-slate-800 bg-slate-900 p-4 space-y-3">
         <div class="flex items-center justify-between">
-          <h2 class="text-lg font-semibold">Preview</h2>
+          <div>
+            <h2 class="text-lg font-semibold">Editor</h2>
+            <p class="text-xs text-slate-400">Prompt and source code</p>
+          </div>
+          <button id="toggleEditor" class="text-sm text-slate-400 hover:text-slate-200">Collapse</button>
+        </div>
+
+        <div id="editorContent" class="space-y-3 panel-transition">
+          <label class="text-sm font-medium">Prompt</label>
+          <textarea id="prompt" rows="3" class="w-full rounded-lg border border-slate-700 bg-slate-950 p-3 text-sm" placeholder="Describe the diagram you want to create"></textarea>
+
+          <div class="flex flex-wrap gap-2">
+            <select id="example" class="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm">
+              <option value="">Select example</option>
+              <option value="flowchart">Flowchart</option>
+              <option value="sequence">Sequence diagram</option>
+              <option value="state">State diagram</option>
+            </select>
+            <button id="generate" class="rounded-lg bg-cyan-600 px-3 py-2 text-sm font-medium hover:bg-cyan-500">Generate</button>
+            <button id="render" class="rounded-lg bg-slate-700 px-3 py-2 text-sm font-medium hover:bg-slate-600">Render</button>
+          </div>
+
+          <label class="text-sm font-medium">Diagram code</label>
+          <textarea id="code" rows="12" class="w-full rounded-lg border border-slate-700 bg-slate-950 p-3 font-mono text-sm" spellcheck="false"></textarea>
+        </div>
+      </section>
+
+      <section class="rounded-xl border border-slate-800 bg-slate-900 p-4 space-y-3 lg:min-h-[640px]">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-lg font-semibold">Preview</h2>
+            <p class="text-xs text-slate-400">Primary view</p>
+          </div>
           <div class="text-xs text-slate-400">SVG output</div>
         </div>
-        <div id="output" class="min-h-[320px] rounded-lg border border-slate-800 bg-white p-3 text-slate-900 overflow-auto"></div>
+        <div id="output" class="min-h-[360px] rounded-lg border border-slate-800 bg-white p-3 text-slate-900 overflow-auto lg:min-h-[560px]"></div>
         <div id="error" class="rounded-lg border border-rose-800 bg-rose-950/40 p-3 text-sm text-rose-200 hidden"></div>
       </section>
     </div>
@@ -141,7 +155,6 @@
           if (data.result.mmdPath) {
             const link = document.createElement('a');
             link.href = data.result.mmdPath;
-            link.textContent = 'Download MMD file';
             link.target = '_blank';
             link.style.display = 'block';
             link.style.marginTop = '0.75rem';
@@ -182,6 +195,15 @@
 
     document.getElementById('generate').addEventListener('click', generateDiagram);
     document.getElementById('render').addEventListener('click', renderDiagram);
+
+    const editorContentEl = document.getElementById('editorContent');
+    const editorToggleEl = document.getElementById('toggleEditor');
+
+    editorToggleEl.addEventListener('click', () => {
+      const collapsed = editorContentEl.style.display === 'none';
+      editorContentEl.style.display = collapsed ? 'block' : 'none';
+      editorToggleEl.textContent = collapsed ? 'Collapse' : 'Expand';
+    });
 
     document.getElementById('toggleLogs').addEventListener('click', () => {
       const collapsed = logsEl.style.display === 'none';

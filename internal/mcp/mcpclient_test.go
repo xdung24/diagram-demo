@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -91,6 +92,43 @@ func TestReadResponseParsesJSONRPCResult(t *testing.T) {
 	}
 	if out["ok"] != true {
 		t.Fatalf("expected decoded result to contain ok=true, got %#v", out)
+	}
+}
+
+func TestCallToolIncludesGlobalInstructions(t *testing.T) {
+	payload := &bytes.Buffer{}
+	c := &McpClient{
+		stdin:           &testWriteCloser{Buffer: payload},
+		stdout:          bufio.NewReader(strings.NewReader("{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"ok\":true}}\n")),
+		instructionsURI: "instructions://global",
+	}
+
+	_, err := c.CallTool(context.Background(), "generate_diagram", map[string]any{"content": "graph TD"})
+	if err != nil {
+		t.Fatalf("CallTool returned unexpected error: %v", err)
+	}
+
+	var msg map[string]any
+	if err := json.Unmarshal(bytes.TrimSpace(payload.Bytes()), &msg); err != nil {
+		t.Fatalf("unmarshal request payload: %v", err)
+	}
+
+	params, ok := msg["params"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected params object, got %#v", msg["params"])
+	}
+
+	arguments, ok := params["arguments"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected arguments object, got %#v", params["arguments"])
+	}
+
+	instructions, ok := arguments["instructions"].([]any)
+	if !ok {
+		t.Fatalf("expected instructions array, got %#v", arguments["instructions"])
+	}
+	if !reflect.DeepEqual(instructions, []any{"instructions://global"}) {
+		t.Fatalf("expected global instructions URI, got %#v", instructions)
 	}
 }
 
