@@ -26,9 +26,7 @@ var publicFS embed.FS
 
 func main() {
 	// Load .env file automatically into the system environment
-	if err := godotenv.Load(); err != nil {
-		log.Fatal("Error loading .env file")
-	}
+	godotenv.Load()
 
 	// Run basic commands
 	if len(os.Args) > 1 {
