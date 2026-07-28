@@ -4,6 +4,7 @@
 *.out
 *.tmp
 .env
+
 # Ignore diagram files
 /public/diagram/*.svg
 /public/diagram/*.png
@@ -12,3 +13,5 @@
 /public/diagram/*.bpmn
 /public/diagram/*.dmn
 /public/diagram/*.drawio
+/public/diagram/*.json
+/public/diagram/*/*.json

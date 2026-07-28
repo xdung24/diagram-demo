@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/xdung24/diagram-demo/internal/ai"
@@ -15,11 +16,22 @@ import (
 )
 
 // Service holds the MCP client, log stream, and LLM integration for the demo server.
+type Diagram struct {
+	Title     string    `json:"title"`
+	Slug      string    `json:"slug"`
+	Prompt    string    `json:"prompt"`
+	Code      string    `json:"code"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
 type Service struct {
 	mcpclient *mcp.McpClient
 	llmclient *ai.AIClient
 	logStream *Stream
 	binary    string
+	diagrams  map[string]Diagram
+	mu        sync.RWMutex
 }
 
 // New creates a service and starts the MCP child process.
@@ -34,6 +46,7 @@ func NewDiagramService(ctx context.Context, binary string, args ...string) (*Ser
 		llmclient: ai.NewClient(),
 		logStream: NewLogStream(),
 		binary:    binary,
+		diagrams:  make(map[string]Diagram),
 	}
 	return svc, nil
 }
@@ -62,11 +75,7 @@ func (s *Service) Render(ctx context.Context, toolName string, code string, para
 }
 
 func (s *Service) renderMermaidToSVG(ctx context.Context, code string, params map[string]any) (map[string]any, error) {
-	wd, err := os.Getwd()
-	if err != nil {
-		return nil, fmt.Errorf("current working directory: %w", err)
-	}
-	publicRoot := filepath.Join(wd, "public")
+	publicRoot := resolvePublicRoot()
 	outDir := filepath.Join(publicRoot, "diagram")
 	if dir, ok := params["outputDir"].(string); ok && dir != "" {
 		if filepath.IsAbs(dir) {
@@ -125,6 +134,23 @@ func (s *Service) renderMermaidToSVG(ctx context.Context, code string, params ma
 	}, nil
 }
 
+func resolvePublicRoot() string {
+	dir, err := os.Getwd()
+	if err != nil {
+		return filepath.Join(".", "public")
+	}
+	for {
+		if _, err := os.Stat(filepath.Join(dir, "public")); err == nil {
+			return filepath.Join(dir, "public")
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return filepath.Join(dir, "public")
+		}
+		dir = parent
+	}
+}
+
 func sanitizeFileName(name string) string {
 	name = strings.TrimSpace(name)
 	name = strings.ReplaceAll(name, " ", "-")
@@ -143,6 +169,29 @@ func sanitizeFileName(name string) string {
 		}
 		return -1
 	}, name)
+}
+
+func slugifyTitle(title string) string {
+	text := strings.TrimSpace(strings.ToLower(title))
+	if text == "" {
+		return "diagram"
+	}
+
+	var builder strings.Builder
+	prevDash := false
+	for _, r := range text {
+		switch {
+		case r >= 'a' && r <= 'z', r >= '0' && r <= '9':
+			builder.WriteRune(r)
+			prevDash = false
+		default:
+			if builder.Len() > 0 && !prevDash {
+				builder.WriteRune('-')
+				prevDash = true
+			}
+		}
+	}
+	return strings.Trim(builder.String(), "-")
 }
 
 func normalizeToolName(toolName string) string {
@@ -194,8 +243,175 @@ func (s *Service) Logs() *Stream {
 	return s.logStream
 }
 
+func (s *Service) ensureStore() {
+	if s == nil {
+		return
+	}
+	if s.diagrams == nil {
+		s.diagrams = make(map[string]Diagram)
+	}
+}
+
+func (s *Service) ListDiagrams() []Diagram {
+	if s == nil {
+		return nil
+	}
+	s.ensureStore()
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	items := make([]Diagram, 0, len(s.diagrams))
+	for _, item := range s.diagrams {
+		items = append(items, item)
+	}
+	return items
+}
+
+func (s *Service) CreateDiagram(input Diagram) (Diagram, error) {
+	if s == nil {
+		return Diagram{}, fmt.Errorf("service unavailable")
+	}
+	s.ensureStore()
+	s.mu.Lock()
+	input.CreatedAt = time.Now().UTC()
+	input.UpdatedAt = input.CreatedAt
+	input.Title = strings.TrimSpace(input.Title)
+	if input.Title == "" {
+		input.Title = "Untitled diagram"
+	}
+	input.Prompt = strings.TrimSpace(input.Prompt)
+	input.Code = strings.TrimSpace(input.Code)
+	input.Slug = slugifyTitle(input.Title)
+	if err := s.persistDiagramFolder(input, ""); err != nil {
+		return Diagram{}, err
+	}
+	s.diagrams[input.Slug] = input
+	defer s.mu.Unlock()
+	createdItem := s.diagrams[input.Slug]
+	return createdItem, nil
+}
+
+func (s *Service) GetDiagram(slug string) (Diagram, error) {
+	if s == nil {
+		return Diagram{}, fmt.Errorf("service unavailable")
+	}
+	s.ensureStore()
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	item, ok := s.diagrams[slug]
+	if !ok {
+		return Diagram{}, fmt.Errorf("diagram %s not found", slug)
+	}
+	return item, nil
+}
+
+func (s *Service) UpdateDiagram(slug string, input Diagram) (Diagram, error) {
+	if s == nil {
+		return Diagram{}, fmt.Errorf("service unavailable")
+	}
+	s.ensureStore()
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	current, ok := s.diagrams[slug]
+	if !ok {
+		return Diagram{}, fmt.Errorf("diagram %s not found", slug)
+	}
+
+	previousSlug := current.Slug
+	current.Title = strings.TrimSpace(input.Title)
+	if current.Title == "" {
+		current.Title = "Untitled diagram"
+	}
+	current.Prompt = strings.TrimSpace(input.Prompt)
+	current.Code = strings.TrimSpace(input.Code)
+	current.Slug = slugifyTitle(current.Title)
+	current.UpdatedAt = time.Now().UTC()
+
+	if err := s.persistDiagramFolder(current, previousSlug); err != nil {
+		return Diagram{}, err
+	}
+	s.diagrams[current.Slug] = current
+	return current, nil
+}
+
+func (s *Service) DeleteDiagram(slug string) error {
+	if s == nil {
+		return fmt.Errorf("service unavailable")
+	}
+	s.ensureStore()
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	current, ok := s.diagrams[slug]
+	if !ok {
+	}
+	if !ok {
+		return fmt.Errorf("diagram %s not found", slug)
+	}
+	if err := s.removeDiagramFolder(current); err != nil {
+		return err
+	}
+	delete(s.diagrams, current.Slug)
+	return nil
+}
+
+func diagramFolderName(item Diagram) string {
+	if strings.TrimSpace(item.Title) != "" {
+		return sanitizeFileName(slugifyTitle(item.Title))
+	}
+	return sanitizeFileName(item.Slug)
+}
+
+func (s *Service) persistDiagramFolder(item Diagram, previousSlug string) error {
+	publicRoot := resolvePublicRoot()
+	diagramRoot := filepath.Join(publicRoot, "diagram")
+	if err := os.MkdirAll(diagramRoot, 0o755); err != nil {
+		return fmt.Errorf("create diagram root: %w", err)
+	}
+
+	folderName := diagramFolderName(item)
+	dirPath := filepath.Join(diagramRoot, folderName)
+	if previousSlug != "" && previousSlug != item.Slug {
+		oldDir := filepath.Join(diagramRoot, diagramFolderName(Diagram{Slug: previousSlug}))
+		if _, err := os.Stat(oldDir); err == nil {
+			if _, err := os.Stat(dirPath); os.IsNotExist(err) {
+				if err := os.Rename(oldDir, dirPath); err != nil {
+					return fmt.Errorf("rename diagram folder: %w", err)
+				}
+			}
+		}
+	}
+	if err := os.MkdirAll(dirPath, 0o755); err != nil {
+		return fmt.Errorf("create diagram folder: %w", err)
+	}
+
+	payload, err := json.MarshalIndent(map[string]any{
+		"title":       item.Title,
+		"slug":        item.Slug,
+		"createdAt":   item.CreatedAt.Format(time.RFC3339),
+		"updatedAt":   item.UpdatedAt.Format(time.RFC3339),
+		"description": item.Prompt,
+	}, "", "  ")
+	if err != nil {
+		return fmt.Errorf("marshal diagram metadata: %w", err)
+	}
+	return os.WriteFile(filepath.Join(dirPath, "diagram.json"), payload, 0o644)
+}
+
+func (s *Service) removeDiagramFolder(item Diagram) error {
+	publicRoot := resolvePublicRoot()
+	dir := filepath.Join(publicRoot, "diagram", diagramFolderName(item))
+	if diagramFolderName(item) == "" || diagramFolderName(item) == "diagram" && item.Slug == "" {
+		return nil
+	}
+	return os.RemoveAll(dir)
+}
+
 // Close shuts down the child process and associated resources.
 func (s *Service) Close() error {
+	if s == nil || s.mcpclient == nil {
+		return nil
+	}
 	return s.mcpclient.Close()
 }
 

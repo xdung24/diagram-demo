@@ -3,78 +3,73 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Diagram MCP Demo</title>
+  <title>Diagram MCP Detail</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
-    .panel-transition { transition: all 180ms ease; }
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen">
-  <div class="max-w-7xl mx-auto p-6 space-y-4">
-    <header class="flex items-center justify-between">
+  <div class="max-w-7xl mx-auto p-6 space-y-6">
+    <header class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
       <div>
-        <h1 class="text-2xl font-semibold">Diagram MCP Demo</h1>
-        <p class="text-sm text-slate-400">Generate, render, and debug diagrams.</p>
+        <h1 class="text-2xl font-semibold">Diagram detail</h1>
+        <p class="text-sm text-slate-400">View, update, and delete a diagram from the /diagram route.</p>
       </div>
-      <div class="text-sm text-slate-400" id="status">Connecting…</div>
+      <div class="flex items-center gap-2">
+        <a href="/" class="rounded-lg border border-slate-700 px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800">Back to landing page</a>
+        <span id="status" class="text-sm text-slate-400">Loading…</span>
+      </div>
     </header>
 
-    <div class="grid gap-4 lg:grid-cols-[minmax(280px,0.8fr)_minmax(560px,1.2fr)]">
-      <section class="rounded-xl border border-slate-800 bg-slate-900 p-4 space-y-3">
+    <section class="grid gap-6 lg:grid-cols-[minmax(320px,0.95fr)_minmax(380px,1.05fr)]">
+      <div class="rounded-xl border border-slate-800 bg-slate-900 p-5 space-y-4">
         <div class="flex items-center justify-between">
           <div>
             <h2 class="text-lg font-semibold">Editor</h2>
-            <p class="text-xs text-slate-400">Prompt and source code</p>
+            <p class="text-xs text-slate-400">Update the selected diagram content.</p>
           </div>
-          <button id="toggleEditor" class="text-sm text-slate-400 hover:text-slate-200">Collapse</button>
+          <button id="deleteBtn" class="rounded-lg border border-rose-700 px-3 py-2 text-sm font-medium text-rose-200 hover:bg-rose-950/40">Delete</button>
         </div>
 
-        <div id="editorContent" class="space-y-3 panel-transition">
-          <label class="text-sm font-medium">Prompt</label>
-          <textarea id="prompt" rows="3" class="w-full rounded-lg border border-slate-700 bg-slate-950 p-3 text-sm" placeholder="Describe the diagram you want to create"></textarea>
+        <form id="detailForm" class="space-y-3">
+          <label class="block text-sm">
+            <span class="mb-1 block text-slate-300">Title</span>
+            <input id="detailTitle" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm" required />
+          </label>
+          <label class="block text-sm">
+            <span class="mb-1 block text-slate-300">Prompt</span>
+            <textarea id="detailPrompt" rows="3" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm"></textarea>
+          </label>
+          <label class="block text-sm">
+            <span class="mb-1 block text-slate-300">Diagram code</span>
+            <textarea id="detailCode" rows="12" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 font-mono text-sm" spellcheck="false"></textarea>
+          </label>
           <div class="flex flex-wrap gap-2">
-            <button id="generate" class="rounded-lg bg-slate-600 px-3 py-2 text-sm font-medium hover:bg-slate-500">Generate</button>
+            <button type="submit" class="rounded-lg bg-slate-600 px-3 py-2 text-sm font-medium hover:bg-slate-500">Save changes</button>
+            <button type="button" id="renderBtn" class="rounded-lg border border-slate-700 px-3 py-2 text-sm font-medium hover:bg-slate-800">Render preview</button>
           </div>
+        </form>
+      </div>
 
-          <label class="text-sm font-medium">Diagram code</label>
-          <textarea id="code" rows="12" class="w-full rounded-lg border border-slate-700 bg-slate-950 p-3 font-mono text-sm" spellcheck="false"></textarea>
-          <div class="flex flex-wrap gap-2">
-            <button id="render" class="rounded-lg bg-slate-700 px-3 py-2 text-sm font-medium hover:bg-slate-600">Render</button>
-          </div>
-        </div>
-      </section>
-
-      <section class="rounded-xl border border-slate-800 bg-slate-900 p-4 space-y-3 lg:min-h-[640px]">
+      <div class="rounded-xl border border-slate-800 bg-slate-900 p-5 space-y-4">
         <div class="flex items-center justify-between">
           <div>
             <h2 class="text-lg font-semibold">Preview</h2>
-            <p class="text-xs text-slate-400">Primary view</p>
+            <p class="text-xs text-slate-400">Rendered output for the current diagram.</p>
           </div>
-          <div class="text-xs text-slate-400">SVG output</div>
         </div>
-        <div id="output" class="min-h-[360px] rounded-lg border border-slate-800 bg-white p-3 text-slate-900 overflow-auto lg:min-h-[560px]"></div>
-        <div id="error" class="rounded-lg border border-rose-800 bg-rose-950/40 p-3 text-sm text-rose-200 hidden"></div>
-      </section>
-    </div>
-
-    <section class="rounded-xl border border-slate-800 bg-slate-900 p-4">
-      <div class="flex items-center justify-between mb-2">
-        <h2 class="text-lg font-semibold">MCP Debugger / Logs</h2>
-        <button id="toggleLogs" class="text-sm text-slate-400">Collapse</button>
+        <div id="output" class="min-h-[320px] rounded-lg border border-slate-800 bg-white p-3 text-slate-900 overflow-auto"></div>
+        <div id="error" class="hidden rounded-lg border border-rose-800 bg-rose-950/40 p-3 text-sm text-rose-200"></div>
       </div>
-      <div id="logs" class="rounded-lg border border-slate-800 bg-slate-950 p-3 text-xs font-mono max-h-64 overflow-auto"></div>
     </section>
   </div>
 
   <script>
     const statusEl = document.getElementById('status');
-    const promptEl = document.getElementById('prompt');
-    const codeEl = document.getElementById('code');
     const outputEl = document.getElementById('output');
     const errorEl = document.getElementById('error');
-    const logsEl = document.getElementById('logs');
- 
+
     function setStatus(text) {
       statusEl.textContent = text;
     }
@@ -89,63 +84,58 @@
       errorEl.textContent = text;
     }
 
-    function appendLog(text) {
-      const row = document.createElement('div');
-      row.textContent = text;
-      logsEl.prepend(row);
-      if (logsEl.children.length > 100) {
-        logsEl.removeChild(logsEl.lastChild);
-      }
-    }
-
-    async function request(path, body) {
-      const options = body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : { method: 'GET' };
+    async function requestJson(path, options = {}) {
       const res = await fetch(path, options);
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || 'request failed');
+        throw new Error(data.error || 'Request failed');
       }
       return data;
     }
 
-    async function generateDiagram() {
-      setStatus('Generating…');
+    async function loadDiagram() {
+      const pathParts = window.location.pathname.split('/').filter(Boolean);
+      const slug = pathParts.length > 1 ? pathParts[1] : '';
+      const id = slug || new URLSearchParams(window.location.search).get('id');
+      if (!id) {
+        outputEl.innerHTML = '<div class="text-sm text-slate-600">Pick a diagram from the landing page or create a new one first.</div>';
+        setStatus('No diagram selected');
+        return;
+      }
+      setStatus('Loading…');
       try {
-        const data = await request('/api/generate', { prompt: promptEl.value, tool: 'generate_diagram', params: {} });
-        codeEl.value = data.generatedCode || codeEl.value;
-        if (data.result && (data.result.content || data.result.structuredContent)) {
-          renderContent(data.result.content || data.result.structuredContent);
-        }
-        setStatus('Ready');
+        const item = await requestJson(`/api/diagram/${encodeURIComponent(id)}`);
+        document.getElementById('detailTitle').value = item.title || '';
+        document.getElementById('detailPrompt').value = item.prompt || '';
+        document.getElementById('detailCode').value = item.code || '';
+        setStatus('Loaded');
       } catch (err) {
-        setError(err.message);
-        setStatus('Error');
+        setStatus(err.message);
       }
     }
 
     async function renderDiagram() {
+      const code = document.getElementById('detailCode').value;
+      if (!code.trim()) {
+        setError('Add some diagram code first');
+        return;
+      }
       setStatus('Rendering…');
       try {
-        const data = await request('/api/render', { tool: 'generate_diagram', code: codeEl.value, params: {} });
-        if (data.result && data.result.svgPath) {
-          outputEl.innerHTML = '';
-          const img = document.createElement('img');
-          img.src = data.result.svgPath;
-          img.alt = 'Rendered diagram';
-          img.style.maxWidth = '100%';
-          outputEl.appendChild(img);
-          if (data.result.mmdPath) {
-            const link = document.createElement('a');
-            link.href = data.result.mmdPath;
-            link.target = '_blank';
-            link.style.display = 'block';
-            link.style.marginTop = '0.75rem';
-            outputEl.appendChild(link);
-          }
-          setStatus('Ready');
-          return;
+        const data = await requestJson('/api/render', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tool: 'generate_diagram', code, params: {} }),
+        });
+        const result = data.result || {};
+        if (result.svgPath) {
+          outputEl.innerHTML = `<img src="${result.svgPath}" alt="Rendered diagram" class="max-w-full" />`;
+        } else if (typeof result === 'string') {
+          outputEl.innerHTML = `<pre class="whitespace-pre-wrap text-sm">${result}</pre>`;
+        } else {
+          outputEl.innerHTML = '<div class="text-sm text-slate-600">Preview generated.</div>';
         }
-        renderContent(data.result && (data.result.content || data.result.structuredContent) ? (data.result.content || data.result.structuredContent) : data.result || []);
+        setError('');
         setStatus('Ready');
       } catch (err) {
         setError(err.message);
@@ -153,52 +143,50 @@
       }
     }
 
-    function renderContent(content) {
-      if (!Array.isArray(content)) {
-        content = [content];
+    document.getElementById('detailForm').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const pathParts = window.location.pathname.split('/').filter(Boolean);
+      const slug = pathParts.length > 1 ? pathParts[1] : '';
+      const id = slug || new URLSearchParams(window.location.search).get('id');
+      if (!id) {
+        setStatus('Select a diagram first');
+        return;
       }
-      const text = content.map((item) => {
-        if (typeof item === 'string') {
-          return item;
-        }
-        if (item && typeof item === 'object') {
-          return item.text || item.data || JSON.stringify(item, null, 2);
-        }
-        return String(item);
-      }).join('\n');
-      const svg = text.match(/<svg[\s\S]*<\/svg>/i);
-      if (svg) {
-        outputEl.innerHTML = svg[0];
-      } else {
-        outputEl.innerHTML = '<pre class="text-sm whitespace-pre-wrap">' + text.replace(/</g, '&lt;') + '</pre>';
+      setStatus('Saving…');
+      try {
+        await requestJson(`/api/diagram/${encodeURIComponent(id)}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: document.getElementById('detailTitle').value.trim(),
+            prompt: document.getElementById('detailPrompt').value.trim(),
+            code: document.getElementById('detailCode').value.trim(),
+          }),
+        });
+        setStatus('Saved');
+      } catch (err) {
+        setStatus(err.message);
       }
-      setError('');
-    }
-
-    document.getElementById('generate').addEventListener('click', generateDiagram);
-    document.getElementById('render').addEventListener('click', renderDiagram);
-
-    const editorContentEl = document.getElementById('editorContent');
-    const editorToggleEl = document.getElementById('toggleEditor');
-
-    editorToggleEl.addEventListener('click', () => {
-      const collapsed = editorContentEl.style.display === 'none';
-      editorContentEl.style.display = collapsed ? 'block' : 'none';
-      editorToggleEl.textContent = collapsed ? 'Collapse' : 'Expand';
     });
 
-    document.getElementById('toggleLogs').addEventListener('click', () => {
-      const collapsed = logsEl.style.display === 'none';
-      logsEl.style.display = collapsed ? 'block' : 'none';
-      document.getElementById('toggleLogs').textContent = collapsed ? 'Expand' : 'Collapse';
+    document.getElementById('renderBtn').addEventListener('click', renderDiagram);
+    document.getElementById('deleteBtn').addEventListener('click', async () => {
+      const pathParts = window.location.pathname.split('/').filter(Boolean);
+      const slug = pathParts.length > 1 ? pathParts[1] : '';
+      const id = slug || new URLSearchParams(window.location.search).get('id');
+      if (!id) {
+        setStatus('No diagram selected');
+        return;
+      }
+      try {
+        await requestJson(`/api/diagram/${encodeURIComponent(id)}`, { method: 'DELETE' });
+        window.location.href = '/';
+      } catch (err) {
+        setStatus(err.message);
+      }
     });
 
-    const eventSource = new EventSource('/api/logs/stream');
-    eventSource.onopen = () => setStatus('Connected');
-    eventSource.onerror = () => setStatus('Connection issue');
-    eventSource.onmessage = (ev) => {
-      appendLog(ev.data);
-    };
+    loadDiagram();
   </script>
 </body>
 </html>

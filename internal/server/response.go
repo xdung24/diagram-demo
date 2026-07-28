@@ -59,9 +59,12 @@ func statusPageMiddleware(next http.Handler, publicFS fs.FS) http.Handler {
 		next.ServeHTTP(rw, r)
 
 		status := rw.status
-		if status == http.StatusUnauthorized || status == http.StatusForbidden || status == http.StatusNotFound {
-			writeStatusPage(w, status, publicFS)
-			return
+		contentType := rw.Header().Get("Content-Type")
+		if contentType != "application/json" {
+			if status == http.StatusUnauthorized || status == http.StatusForbidden || status == http.StatusNotFound {
+				writeStatusPage(w, status, publicFS)
+				return
+			}
 		}
 
 		if !rw.wroteHead {

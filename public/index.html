@@ -7,198 +7,172 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
-    .panel-transition { transition: all 180ms ease; }
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen">
-  <div class="max-w-7xl mx-auto p-6 space-y-4">
-    <header class="flex items-center justify-between">
+  <div class="max-w-7xl mx-auto p-6 space-y-6">
+    <header class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
       <div>
         <h1 class="text-2xl font-semibold">Diagram MCP Demo</h1>
-        <p class="text-sm text-slate-400">Generate, render, and debug diagrams.</p>
+        <p class="text-sm text-slate-400">Create new diagrams, manage your list, and open a detail view whenever you want to update or delete an entry.</p>
       </div>
-      <div class="text-sm text-slate-400" id="status">Connecting…</div>
+      <div class="flex flex-wrap items-center gap-2">
+        <span id="createStatus" class="text-sm text-slate-400"></span>
+        <button id="openCreateDialog" type="button" class="rounded-lg bg-slate-600 px-3 py-2 text-sm font-medium hover:bg-slate-500">New diagram</button>
+      </div>
     </header>
 
-    <div class="grid gap-4 lg:grid-cols-[minmax(280px,0.8fr)_minmax(560px,1.2fr)]">
-      <section class="rounded-xl border border-slate-800 bg-slate-900 p-4 space-y-3">
-        <div class="flex items-center justify-between">
-          <div>
-            <h2 class="text-lg font-semibold">Editor</h2>
-            <p class="text-xs text-slate-400">Prompt and source code</p>
-          </div>
-          <button id="toggleEditor" class="text-sm text-slate-400 hover:text-slate-200">Collapse</button>
+    <section class="rounded-xl border border-slate-800 bg-slate-900 p-5 space-y-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-lg font-semibold">Your diagrams</h2>
+          <p class="text-xs text-slate-400">Select any item to open the detail page at /diagram.</p>
         </div>
-
-        <div id="editorContent" class="space-y-3 panel-transition">
-          <label class="text-sm font-medium">Prompt</label>
-          <textarea id="prompt" rows="3" class="w-full rounded-lg border border-slate-700 bg-slate-950 p-3 text-sm" placeholder="Describe the diagram you want to create"></textarea>
-          <div class="flex flex-wrap gap-2">
-            <button id="generate" class="rounded-lg bg-slate-600 px-3 py-2 text-sm font-medium hover:bg-slate-500">Generate</button>
-          </div>
-
-          <label class="text-sm font-medium">Diagram code</label>
-          <textarea id="code" rows="12" class="w-full rounded-lg border border-slate-700 bg-slate-950 p-3 font-mono text-sm" spellcheck="false"></textarea>
-          <div class="flex flex-wrap gap-2">
-            <button id="render" class="rounded-lg bg-slate-700 px-3 py-2 text-sm font-medium hover:bg-slate-600">Render</button>
-          </div>
-        </div>
-      </section>
-
-      <section class="rounded-xl border border-slate-800 bg-slate-900 p-4 space-y-3 lg:min-h-[640px]">
-        <div class="flex items-center justify-between">
-          <div>
-            <h2 class="text-lg font-semibold">Preview</h2>
-            <p class="text-xs text-slate-400">Primary view</p>
-          </div>
-          <div class="text-xs text-slate-400">SVG output</div>
-        </div>
-        <div id="output" class="min-h-[360px] rounded-lg border border-slate-800 bg-white p-3 text-slate-900 overflow-auto lg:min-h-[560px]"></div>
-        <div id="error" class="rounded-lg border border-rose-800 bg-rose-950/40 p-3 text-sm text-rose-200 hidden"></div>
-      </section>
-    </div>
-
-    <section class="rounded-xl border border-slate-800 bg-slate-900 p-4">
-      <div class="flex items-center justify-between mb-2">
-        <h2 class="text-lg font-semibold">MCP Debugger / Logs</h2>
-        <button id="toggleLogs" class="text-sm text-slate-400">Collapse</button>
+        <button id="refreshBtn" class="text-sm text-slate-400 hover:text-slate-200">Refresh</button>
       </div>
-      <div id="logs" class="rounded-lg border border-slate-800 bg-slate-950 p-3 text-xs font-mono max-h-64 overflow-auto"></div>
+      <div id="diagramList" class="space-y-3"></div>
     </section>
+
+    <div id="createDialog" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-4">
+      <div class="w-full max-w-xl rounded-xl border border-slate-800 bg-slate-900 p-5 shadow-2xl">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <h2 class="text-lg font-semibold">Create diagram</h2>
+            <p class="text-xs text-slate-400">Save a new Mermaid diagram to your list.</p>
+          </div>
+          <button id="closeCreateDialog" type="button" class="rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-300 hover:bg-slate-800">Close</button>
+        </div>
+
+        <form id="createForm" class="mt-4 space-y-3">
+          <label class="block text-sm">
+            <span class="mb-1 block text-slate-300">Title</span>
+            <input id="title" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm" placeholder="My new workflow" required />
+          </label>
+          <label class="block text-sm">
+            <span class="mb-1 block text-slate-300">Description</span>
+            <textarea id="prompt" rows="3" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm" placeholder="Describe what the diagram should show"></textarea>
+          </label>
+          <div class="flex flex-wrap gap-2">
+            <button type="submit" class="rounded-lg bg-slate-600 px-3 py-2 text-sm font-medium hover:bg-slate-500">Create diagram</button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 
   <script>
-    const statusEl = document.getElementById('status');
-    const promptEl = document.getElementById('prompt');
-    const codeEl = document.getElementById('code');
-    const outputEl = document.getElementById('output');
-    const errorEl = document.getElementById('error');
-    const logsEl = document.getElementById('logs');
- 
+    const listEl = document.getElementById('diagramList');
+    const createStatusEl = document.getElementById('createStatus');
+    const createDialogEl = document.getElementById('createDialog');
+    const openCreateDialogBtn = document.getElementById('openCreateDialog');
+    const closeCreateDialogBtn = document.getElementById('closeCreateDialog');
+
     function setStatus(text) {
-      statusEl.textContent = text;
+      createStatusEl.textContent = text;
     }
 
-    function setError(text) {
-      if (!text) {
-        errorEl.classList.add('hidden');
-        errorEl.textContent = '';
-        return;
-      }
-      errorEl.classList.remove('hidden');
-      errorEl.textContent = text;
+    function openCreateDialog() {
+      createDialogEl.classList.remove('hidden');
+      createDialogEl.classList.add('flex');
+      document.getElementById('title').focus();
     }
 
-    function appendLog(text) {
-      const row = document.createElement('div');
-      row.textContent = text;
-      logsEl.prepend(row);
-      if (logsEl.children.length > 100) {
-        logsEl.removeChild(logsEl.lastChild);
-      }
+    function closeCreateDialog() {
+      createDialogEl.classList.add('hidden');
+      createDialogEl.classList.remove('flex');
     }
 
-    async function request(path, body) {
-      const options = body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : { method: 'GET' };
+    async function requestJson(path, options = {}) {
       const res = await fetch(path, options);
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || 'request failed');
+        throw new Error(data.error || 'Request failed');
       }
       return data;
     }
 
-    async function generateDiagram() {
-      setStatus('Generating…');
+    function renderList(diagrams) {
+      if (!diagrams.length) {
+        listEl.innerHTML = '<div class="rounded-lg border border-dashed border-slate-700 p-4 text-sm text-slate-400">No diagrams yet. Create one to get started.</div>';
+        return;
+      }
+
+      listEl.innerHTML = diagrams.map((item) => `
+        <article class="rounded-lg border border-slate-800 bg-slate-950/70 p-4">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <h3 class="font-medium">${item.title || 'Untitled diagram'}</h3>
+              <p class="mt-1 text-sm text-slate-400">${(item.prompt || '').slice(0, 100) || 'No prompt provided.'}</p>
+            </div>
+            <span class="rounded-full bg-slate-800 px-2.5 py-1 text-[11px] uppercase tracking-wide text-slate-400">${new Date(item.updatedAt || item.createdAt).toLocaleDateString()}</span>
+          </div>
+          <div class="mt-3 flex flex-wrap gap-2">
+            <a href="/diagram/${encodeURIComponent(item.slug || item.id)}" class="rounded-lg bg-slate-700 px-3 py-2 text-sm font-medium hover:bg-slate-600">Open detail</a>
+          </div>
+        </article>
+      `).join('');
+    }
+
+    async function loadDiagrams() {
       try {
-        const data = await request('/api/generate', { prompt: promptEl.value, tool: 'generate_diagram', params: {} });
-        codeEl.value = data.generatedCode || codeEl.value;
-        if (data.result && (data.result.content || data.result.structuredContent)) {
-          renderContent(data.result.content || data.result.structuredContent);
-        }
-        setStatus('Ready');
+        const data = await requestJson('/api/diagrams');
+        renderList(data.diagrams || []);
       } catch (err) {
-        setError(err.message);
-        setStatus('Error');
+        setStatus(err.message);
       }
     }
 
-    async function renderDiagram() {
-      setStatus('Rendering…');
+    document.getElementById('createForm').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      setStatus('Creating…');
       try {
-        const data = await request('/api/render', { tool: 'generate_diagram', code: codeEl.value, params: {} });
-        if (data.result && data.result.svgPath) {
-          outputEl.innerHTML = '';
-          const img = document.createElement('img');
-          img.src = data.result.svgPath;
-          img.alt = 'Rendered diagram';
-          img.style.maxWidth = '100%';
-          outputEl.appendChild(img);
-          if (data.result.mmdPath) {
-            const link = document.createElement('a');
-            link.href = data.result.mmdPath;
-            link.target = '_blank';
-            link.style.display = 'block';
-            link.style.marginTop = '0.75rem';
-            outputEl.appendChild(link);
-          }
-          setStatus('Ready');
-          return;
-        }
-        renderContent(data.result && (data.result.content || data.result.structuredContent) ? (data.result.content || data.result.structuredContent) : data.result || []);
-        setStatus('Ready');
+        const payload = {
+          title: document.getElementById('title').value.trim(),
+          prompt: document.getElementById('prompt').value.trim(),
+          code: '',
+        };
+        const created = await requestJson('/api/diagrams', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        setStatus('Created');
+        document.getElementById('createForm').reset();
+        closeCreateDialog();
+        window.location.href = `/diagram/${encodeURIComponent(created.slug || created.id)}`;
       } catch (err) {
-        setError(err.message);
-        setStatus('Error');
+        setStatus(err.message);
       }
-    }
-
-    function renderContent(content) {
-      if (!Array.isArray(content)) {
-        content = [content];
-      }
-      const text = content.map((item) => {
-        if (typeof item === 'string') {
-          return item;
-        }
-        if (item && typeof item === 'object') {
-          return item.text || item.data || JSON.stringify(item, null, 2);
-        }
-        return String(item);
-      }).join('\n');
-      const svg = text.match(/<svg[\s\S]*<\/svg>/i);
-      if (svg) {
-        outputEl.innerHTML = svg[0];
-      } else {
-        outputEl.innerHTML = '<pre class="text-sm whitespace-pre-wrap">' + text.replace(/</g, '&lt;') + '</pre>';
-      }
-      setError('');
-    }
-
-    document.getElementById('generate').addEventListener('click', generateDiagram);
-    document.getElementById('render').addEventListener('click', renderDiagram);
-
-    const editorContentEl = document.getElementById('editorContent');
-    const editorToggleEl = document.getElementById('toggleEditor');
-
-    editorToggleEl.addEventListener('click', () => {
-      const collapsed = editorContentEl.style.display === 'none';
-      editorContentEl.style.display = collapsed ? 'block' : 'none';
-      editorToggleEl.textContent = collapsed ? 'Collapse' : 'Expand';
     });
 
-    document.getElementById('toggleLogs').addEventListener('click', () => {
-      const collapsed = logsEl.style.display === 'none';
-      logsEl.style.display = collapsed ? 'block' : 'none';
-      document.getElementById('toggleLogs').textContent = collapsed ? 'Expand' : 'Collapse';
+    openCreateDialogBtn.addEventListener('click', openCreateDialog);
+    closeCreateDialogBtn.addEventListener('click', closeCreateDialog);
+    createDialogEl.addEventListener('click', (event) => {
+      if (event.target === createDialogEl) {
+        closeCreateDialog();
+      }
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        closeCreateDialog();
+      }
     });
 
-    const eventSource = new EventSource('/api/logs/stream');
-    eventSource.onopen = () => setStatus('Connected');
-    eventSource.onerror = () => setStatus('Connection issue');
-    eventSource.onmessage = (ev) => {
-      appendLog(ev.data);
-    };
+    document.getElementById('refreshBtn').addEventListener('click', loadDiagrams);
+    listEl.addEventListener('click', async (event) => {
+      const button = event.target.closest('[data-delete-id]');
+      if (!button) return;
+      const id = button.getAttribute('data-delete-id');
+      try {
+        await requestJson(`/api/diagram/${encodeURIComponent(id)}`, { method: 'DELETE' });
+        await loadDiagrams();
+        setStatus('Deleted');
+      } catch (err) {
+        setStatus(err.message);
+      }
+    });
+
+    loadDiagrams();
   </script>
 </body>
 </html>
