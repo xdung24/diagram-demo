@@ -24,6 +24,16 @@ var version = "dev"
 //go:embed public/**
 var publicFS embed.FS
 
+func resolvePort(argPort, envPort string) string {
+	if argPort != "" {
+		return argPort
+	}
+	if envPort != "" {
+		return envPort
+	}
+	return "8080"
+}
+
 func main() {
 	// Load .env file automatically into the system environment
 	godotenv.Load()
@@ -37,8 +47,9 @@ func main() {
 		}
 	}
 
-	var httpAddress, diagramType string
-	flag.StringVar(&httpAddress, "http", "127.0.0.1:8080", "serve HTTP server at this address")
+	var port, diagramType string
+	flag.StringVar(&port, "p", "", "serve HTTP server at this port")
+	flag.StringVar(&port, "port", "", "serve HTTP server at this port")
 	flag.StringVar(&diagramType, "type", "mermaid", "diagram type, one of: mermaid, bpmn, drawio")
 
 	flag.Usage = func() {
@@ -51,6 +62,8 @@ func main() {
 	}
 
 	flag.Parse()
+
+	port = resolvePort(port, os.Getenv("PORT"))
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -70,8 +83,8 @@ func main() {
 	}()
 
 	// Start the HTTP server
-	log.Printf("serving at %s", httpAddress)
-	srv := &http.Server{Addr: httpAddress, Handler: server.CreateHttpServer(publicFS, diagramService)}
+	log.Printf("serving at %s", ":"+port)
+	srv := &http.Server{Addr: ":" + port, Handler: server.CreateHttpServer(publicFS, diagramService)}
 	go func() {
 		<-ctx.Done()
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
