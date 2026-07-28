@@ -16,6 +16,7 @@ import (
 
 const (
 	defaultReleaseRepo = "https://api.github.com/repos/xdung24/diagram-mcp/releases/latest"
+	githubEnvVar       = "GITHUB_USER_API"
 )
 
 type releaseAsset struct {
@@ -88,6 +89,7 @@ func fetchLatestRelease(url string) (releaseResponse, error) {
 	}
 	req.Header.Set("Accept", "application/vnd.github+json")
 	req.Header.Set("User-Agent", "diagram-demo")
+	addAuthHeader(req)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -97,6 +99,10 @@ func fetchLatestRelease(url string) (releaseResponse, error) {
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+		// If we're rate-limited and the user hasn't provided a token, surface a helpful hint.
+		if resp.StatusCode == http.StatusForbidden && os.Getenv(githubEnvVar) == "" {
+			return release, fmt.Errorf("github release lookup failed: %s: %s; consider setting the %s environment variable with a personal access token to increase rate limits", resp.Status, strings.TrimSpace(string(body)), githubEnvVar)
+		}
 		return release, fmt.Errorf("github release lookup failed: %s: %s", resp.Status, strings.TrimSpace(string(body)))
 	}
 
@@ -104,6 +110,15 @@ func fetchLatestRelease(url string) (releaseResponse, error) {
 		return release, fmt.Errorf("decode release metadata: %w", err)
 	}
 	return release, nil
+}
+
+func addAuthHeader(req *http.Request) {
+	token := strings.TrimSpace(os.Getenv(githubEnvVar))
+	if token == "" {
+		return
+	}
+	// Use the classic token prefix for compatibility with GitHub REST API.
+	req.Header.Set("Authorization", "token "+token)
 }
 
 func selectAssetForPlatform(assets []releaseAsset, goos, goarch string) (releaseAsset, bool) {
@@ -214,12 +229,24 @@ func compareVersions(left, right string) int {
 }
 
 func downloadFile(url, outputPath string) error {
-	resp, err := http.Get(url)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return fmt.Errorf("create download request: %w", err)
+	}
+	req.Header.Set("User-Agent", "diagram-demo")
+	addAuthHeader(req)
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("download asset: %w", err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
+		// If we're blocked by rate limits and no token was provided, hint to the user.
+		if resp.StatusCode == http.StatusForbidden && os.Getenv(githubEnvVar) == "" {
+			body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+			return fmt.Errorf("download asset failed: %s: %s; consider setting %s environment variable with a personal access token", resp.Status, strings.TrimSpace(string(body)), githubEnvVar)
+		}
 		return fmt.Errorf("download asset failed: %s", resp.Status)
 	}
 
