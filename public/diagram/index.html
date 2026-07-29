@@ -88,10 +88,75 @@
     .output-shell:fullscreen .preview-shell {
       min-height: calc(100vh - 2rem);
     }
+    .action-btn {
+      transition: opacity 0.2s ease, transform 0.2s ease, background-color 0.2s ease;
+    }
+    .action-btn.is-loading {
+      opacity: 0.85;
+      cursor: wait;
+      transform: scale(0.98);
+    }
+    .action-btn .btn-spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      margin-right: 8px;
+      vertical-align: text-bottom;
+      border: 2px solid rgba(255, 255, 255, 0.28);
+      border-top-color: currentColor;
+      border-radius: 999px;
+      animation: spin 0.8s linear infinite;
+    }
+    .loading-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: inherit;
+      background: rgba(2, 6, 23, 0.72);
+      backdrop-filter: blur(2px);
+      z-index: 30;
+    }
+    .loading-overlay.hidden {
+      display: none;
+    }
+    .loading-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.7rem;
+      min-width: 180px;
+      padding: 1rem 1.2rem;
+      border-radius: 0.9rem;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      background: rgba(15, 23, 42, 0.95);
+      color: #e2e8f0;
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.28);
+    }
+    .loading-spinner {
+      width: 28px;
+      height: 28px;
+      border: 3px solid rgba(148, 163, 184, 0.28);
+      border-top-color: #38bdf8;
+      border-radius: 999px;
+      animation: spin 0.9s linear infinite;
+    }
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen">
   <div class="max-w-7xl mx-auto p-6 space-y-6">
+    <div id="editorLoadingOverlay" class="loading-overlay hidden" aria-hidden="true">
+      <div class="loading-card">
+        <div class="loading-spinner"></div>
+        <p id="editorLoadingMessage" class="text-sm font-medium">Loading diagram...</p>
+      </div>
+    </div>
     <header class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
       <div>
         <a href="/"><h1 class="text-2xl font-semibold">Diagram MCP Demo</h1></a>
@@ -102,31 +167,32 @@
     </header>
 
     <section class="grid gap-6 lg:grid-cols-[minmax(320px,0.95fr)_minmax(380px,1.05fr)]">
-      <div class="rounded-xl border border-slate-800 bg-slate-900 p-5 space-y-4">
+      <div id="editorPanel" class="relative rounded-xl border border-slate-800 bg-slate-900 p-5 space-y-4" aria-busy="false">
+
         <div class="flex items-center justify-between">
           <div>
             <h2 class="text-lg font-semibold" id="detailTitle">Editor</h2>
             <p class="text-xs text-slate-400" id="updatedAt">Updated at</p>
           </div>
           <div>
-            <button type="button" id="saveBtn" class="rounded-lg bg-slate-600 px-3 py-2 text-sm font-medium hover:bg-slate-500">Save changes</button>
-            <button type="button" id="deleteBtn" class="rounded-lg border border-rose-700 px-3 py-2 text-sm font-medium text-rose-200 hover:bg-rose-950/40">Delete</button>
+            <button type="button" id="saveBtn" class="action-btn rounded-lg bg-slate-600 px-3 py-2 text-sm font-medium hover:bg-slate-500">Save changes</button>
+            <button type="button" id="deleteBtn" class="action-btn rounded-lg border border-rose-700 px-3 py-2 text-sm font-medium text-rose-200 hover:bg-rose-950/40">Delete</button>
           </div>
-      </div>
+        </div>
         <form id="detailForm" class="space-y-3">
           <label class="block text-sm">
             <span class="mb-1 block text-slate-300">Description</span>
-            <textarea id="detailDescription" rows="3" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm"></textarea>
+            <textarea id="detailDescription" rows="6" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm"></textarea>
           </label>
           <div class="flex flex-wrap gap-2">
-            <button type="button" id="generateBtn" class="rounded-lg border border-slate-700 px-3 py-2 text-sm font-medium hover:bg-slate-800">Generate diagram</button>
+            <button type="button" id="generateBtn" class="action-btn rounded-lg border border-slate-700 px-3 py-2 text-sm font-medium hover:bg-slate-800">Generate diagram</button>
           </div>
           <label class="block text-sm">
             <span class="mb-1 block text-slate-300">Diagram code</span>
             <textarea id="detailCode" rows="12" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 font-mono text-sm" spellcheck="false"></textarea>
           </label>
           <div class="flex flex-wrap gap-2">
-            <button type="button" id="renderBtn" class="rounded-lg border border-slate-700 px-3 py-2 text-sm font-medium hover:bg-slate-800">Render preview</button>
+            <button type="button" id="renderBtn" class="action-btn rounded-lg border border-slate-700 px-3 py-2 text-sm font-medium hover:bg-slate-800">Render preview</button>
           </div>
         </form>
       </div>
@@ -173,6 +239,15 @@
     let dragStartY = 0;
     let dragOriginX = 0;
     let dragOriginY = 0;
+    const editorPanelEl = document.getElementById('editorPanel');
+    const editorLoadingOverlay = document.getElementById('editorLoadingOverlay');
+    const editorLoadingMessage = document.getElementById('editorLoadingMessage');
+    const actionButtons = [
+      document.getElementById('saveBtn'),
+      document.getElementById('deleteBtn'),
+      document.getElementById('generateBtn'),
+      document.getElementById('renderBtn'),
+    ];
     
     function setError(text) {
       if (!text) {
@@ -198,6 +273,44 @@
       }
       if (fullscreenBtn) {
         fullscreenBtn.disabled = !enabled;
+      }
+    }
+
+    function setEditorLoading(isLoading, message = 'Working...') {
+      if (!editorPanelEl || !editorLoadingOverlay || !editorLoadingMessage) {
+        return;
+      }
+      editorPanelEl.setAttribute('aria-busy', String(isLoading));
+      editorLoadingMessage.textContent = message;
+      editorLoadingOverlay.classList.toggle('hidden', !isLoading);
+    }
+
+    function setActionLoading(activeButton, isLoading, message = 'Working...') {
+      actionButtons.forEach((button) => {
+        if (!button) {
+          return;
+        }
+        if (button === activeButton && isLoading) {
+          button.dataset.originalText = button.dataset.originalText || button.textContent.trim();
+          button.disabled = true;
+          button.classList.add('is-loading');
+          button.innerHTML = `<span class="btn-spinner"></span><span>${message}</span>`;
+          return;
+        }
+        button.disabled = isLoading;
+      });
+
+      if (!isLoading) {
+        actionButtons.forEach((button) => {
+          if (!button) {
+            return;
+          }
+          button.classList.remove('is-loading');
+          if (button.dataset.originalText) {
+            button.textContent = button.dataset.originalText;
+          }
+          button.disabled = false;
+        });
       }
     }
 
@@ -335,6 +448,8 @@
         return;
       }
       setError('');
+      setEditorLoading(true, 'Loading diagram...');
+      setActionLoading(null, true, 'Loading...');
       try {
         const item = await requestJson(`/api/diagram/${encodeURIComponent(slug)}`);
         document.getElementById('detailTitle').textContent = item.title || '';
@@ -352,6 +467,9 @@
         }
       } catch (err) {
         setError(err.message);
+      } finally {
+        setEditorLoading(false);
+        setActionLoading(null, false);
       }
     }
     loadDiagram();
@@ -361,6 +479,8 @@
       const pathParts = window.location.pathname.split('/').filter(Boolean);
       const slug = pathParts.length > 1 ? pathParts[1] : '';
       setError('');
+      setEditorLoading(true, 'Saving diagram...');
+      setActionLoading(document.getElementById('saveBtn'), true, 'Saving...');
       try {
         await requestJson(`/api/diagram/${encodeURIComponent(slug)}`, {
           method: 'POST',
@@ -371,6 +491,10 @@
           }),
         });
       } catch (err) {
+        setError(err.message);
+      } finally {
+        setEditorLoading(false);
+        setActionLoading(document.getElementById('saveBtn'), false);
       }
     };
     document.getElementById('saveBtn').addEventListener('click', saveDiagram);
@@ -385,6 +509,8 @@
         return;
       }
       setError('');
+      setEditorLoading(true, 'Generating diagram...');
+      setActionLoading(document.getElementById('generateBtn'), true, 'Generating...');
       try {
         const data = await requestJson('/api/generate', {
           method: 'POST',
@@ -393,10 +519,13 @@
         });
         const result = data.generatedCode || '';
         document.getElementById('detailCode').value = result;
+        await renderDiagram();
       } catch (err) {
         setError(err.message);
+      } finally {
+        setEditorLoading(false);
+        setActionLoading(document.getElementById('generateBtn'), false);
       }
-      renderDiagram();
     };
     document.getElementById('generateBtn').addEventListener('click', generateDiagram);
     
@@ -410,6 +539,8 @@
         return;
       }
       setError('');
+      setEditorLoading(true, 'Rendering preview...');
+      setActionLoading(document.getElementById('renderBtn'), true, 'Rendering...');
       try {
         const data = await requestJson('/api/render', {
           method: 'POST',
@@ -428,6 +559,9 @@
         }
       } catch (err) {
         setError(err.message);
+      } finally {
+        setEditorLoading(false);
+        setActionLoading(document.getElementById('renderBtn'), false);
       }
     };
     document.getElementById('renderBtn').addEventListener('click', renderDiagram);
