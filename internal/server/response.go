@@ -100,6 +100,16 @@ func writeStatusPage(w http.ResponseWriter, status int, publicFS fs.FS) {
 	_, _ = w.Write(data)
 }
 
+func loggingMiddleware(next http.Handler) http.Handler {
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		wrapped := &CustomResponseWriter{ResponseWriter: w, status: http.StatusOK}
+		next.ServeHTTP(wrapped, r)
+		log.Printf("%s %s %s %d %s", r.RemoteAddr, r.Method, r.URL.Path, wrapped.status, time.Since(start))
+	})
+}
+
 type CustomResponseWriter struct {
 	http.ResponseWriter
 	status int
@@ -128,14 +138,4 @@ func (rw *CustomResponseWriter) Push(target string, opts *http.PushOptions) erro
 		return pusher.Push(target, opts)
 	}
 	return http.ErrNotSupported
-}
-
-func LoggingMiddleware(next http.Handler) http.Handler {
-
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
-		wrapped := &CustomResponseWriter{ResponseWriter: w, status: http.StatusOK}
-		next.ServeHTTP(wrapped, r)
-		log.Printf("%s %s %s %d %s", r.RemoteAddr, r.Method, r.URL.Path, wrapped.status, time.Since(start))
-	})
 }

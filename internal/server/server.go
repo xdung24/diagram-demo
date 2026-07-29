@@ -201,7 +201,7 @@ func CreateHttpServer(publicFS fs.FS, svc *Service) http.Handler {
 		mux.Handle("/", http.FileServer(http.Dir(".")))
 	}
 
-	return LoggingMiddleware(statusPageMiddleware(mux, publicFS))
+	return loggingMiddleware(statusPageMiddleware(mux, publicFS))
 }
 
 func serveDiagramRoute(w http.ResponseWriter, r *http.Request) {

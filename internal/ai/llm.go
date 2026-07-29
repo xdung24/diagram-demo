@@ -30,6 +30,8 @@ func (c *AIClient) GetAIReply(history []ChatMessage, userMessage string) (string
 		return geminiReply(*c, history, userMessage)
 	case "github":
 		return githubModelsReply(*c, history, userMessage)
+	case "openai":
+		return openAIReply(*c, history, userMessage)
 	default:
 		return openAIReply(*c, history, userMessage)
 	}

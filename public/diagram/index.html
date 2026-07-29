@@ -25,7 +25,7 @@
         <div class="flex items-center justify-between">
           <div>
             <h2 class="text-lg font-semibold" id="detailTitle">Editor</h2>
-            <p class="text-xs text-slate-400">Update the selected diagram content.</p>
+            <p class="text-xs text-slate-400" id="updatedAt">Updated at</p>
           </div>
           <div>
             <button type="button" id="saveBtn" class="rounded-lg bg-slate-600 px-3 py-2 text-sm font-medium hover:bg-slate-500">Save changes</button>
@@ -61,12 +61,21 @@
         <div id="error" class="hidden rounded-lg border border-rose-800 bg-rose-950/40 p-3 text-sm text-rose-200"></div>
       </div>
     </section>
+
+    <section class="rounded-xl border border-slate-800 bg-slate-900 p-4">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="text-lg font-semibold">Debugger</h2>
+        <button id="toggleLogs" class="text-sm text-slate-400">Collapse</button>
+      </div>
+      <div id="logs" class="rounded-lg border border-slate-800 bg-slate-950 p-3 text-xs font-mono max-h-64 overflow-auto"></div>
+    </section>
   </div>
 
   <script>
     const outputEl = document.getElementById('output');
     const errorEl = document.getElementById('error');
-
+    const logsEl = document.getElementById('logs');
+    
     function setError(text) {
       if (!text) {
         errorEl.classList.add('hidden');
@@ -75,6 +84,7 @@
       }
       errorEl.classList.remove('hidden');
       errorEl.textContent = text;
+      console.log('Error:', text);
     }
 
     async function requestJson(path, options = {}) {
@@ -87,9 +97,10 @@
     }
 
     // Save button
-    document.getElementById('saveBtn').addEventListener('click', async (event) => {
+    async function saveDiagram() {
       const pathParts = window.location.pathname.split('/').filter(Boolean);
       const slug = pathParts.length > 1 ? pathParts[1] : '';
+      setError('');
       try {
         await requestJson(`/api/diagram/${encodeURIComponent(slug)}`, {
           method: 'POST',
@@ -101,10 +112,11 @@
         });
       } catch (err) {
       }
-    });
+    };
+    document.getElementById('saveBtn').addEventListener('click', saveDiagram);
 
     // Generate button
-    document.getElementById('generateBtn').addEventListener('click', async () => {
+    async function generateDiagram() {
       const description = document.getElementById('detailDescription').value.trim();
       if (!description) {
         setError('Add a description first');
@@ -119,14 +131,14 @@
         });
         const result = data.generatedCode || '';
         document.getElementById('detailCode').value = result;
-        setError('');
       } catch (err) {
         setError(err.message);
       }
-    });
+    };
+    document.getElementById('generateBtn').addEventListener('click', generateDiagram);
     
     // Render button
-    document.getElementById('renderBtn').addEventListener('click', async () => {
+    async function renderDiagram() {
       const code = document.getElementById('detailCode').value;
       if (!code.trim()) {
         setError('Add some diagram code first');
@@ -147,14 +159,14 @@
         } else {
           outputEl.innerHTML = '<div class="text-sm text-slate-600">Preview generated.</div>';
         }
-        setError('');
       } catch (err) {
         setError(err.message);
       }
-    });
+    };
+    document.getElementById('renderBtn').addEventListener('click', renderDiagram);
 
     // Delete button
-    document.getElementById('deleteBtn').addEventListener('click', async () => {
+    async function deleteDiagram() {
       const pathParts = window.location.pathname.split('/').filter(Boolean);
       const slug = pathParts.length > 1 ? pathParts[1] : '';
       if (confirm("Are you sure you want to delete this diagram?")) {
@@ -165,7 +177,8 @@
           setError(err.message);
         }
       }
-    });
+    };
+    document.getElementById('deleteBtn').addEventListener('click', deleteDiagram);
 
     async function loadDiagram() {
       const pathParts = window.location.pathname.split('/').filter(Boolean);
@@ -175,9 +188,12 @@
         outputEl.innerHTML = '<div class="text-sm text-slate-600">Pick a diagram from the landing page or create a new one first.</div>';
         return;
       }
+      setError('');
       try {
         const item = await requestJson(`/api/diagram/${encodeURIComponent(id)}`);
-        document.getElementById('detailTitle').value = item.title || '';
+        document.getElementById('detailTitle').textContent = item.title || '';
+        const updatedAt = new Date(item.updatedAt) || new Date();
+        document.getElementById('updatedAt').textContent = `${updatedAt.toLocaleString()}`;
         document.getElementById('detailDescription').value = item.description || '';
         document.getElementById('detailCode').value = item.code || '';
       } catch (err) {
@@ -186,6 +202,20 @@
     }
 
     loadDiagram();
+
+    function appendLog(text) {
+      const row = document.createElement('div');
+      row.textContent = text;
+      logsEl.prepend(row);
+      if (logsEl.children.length > 100) {
+        logsEl.removeChild(logsEl.lastChild);
+      }
+    }
+    const eventSource = new EventSource('/api/logs/stream');
+    eventSource.onerror = () => setError('Connection issue');
+    eventSource.onmessage = (ev) => {
+      appendLog(ev.data);
+    };
   </script>
 	</body>
 </html>
