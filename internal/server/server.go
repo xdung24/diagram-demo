@@ -181,6 +181,7 @@ func CreateHttpServer(publicFS fs.FS, svc *Service) http.Handler {
 	sub, err := fs.Sub(publicFS, "public")
 	if err == nil {
 		fileServer := http.FileServer(http.FS(sub))
+		// diagram detail page
 		mux.HandleFunc("/diagram/{slug}", func(w http.ResponseWriter, r *http.Request) {
 			if r.Method == http.MethodGet {
 				serveDiagramRoute(w, r)
@@ -188,13 +189,36 @@ func CreateHttpServer(publicFS fs.FS, svc *Service) http.Handler {
 			}
 			http.NotFound(w, r)
 		})
+		// All other routes, serve static content from embedded FS or /public/ folder
 		mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-			// Add cache control headers to .ico, .css, .js, and .png files
-			contentType := r.Header.Get("Content-Type")
-			if r.Method == http.MethodGet && (contentType == "image/x-icon" || contentType == "text/css" || contentType == "application/javascript" || contentType == "image/png" || contentType == "image/jpeg") {
-				w.Header().Set("Cache-Control", "public, max-age=31536000") // Cache for 1 year
+			// If file exists in embedded FS, serve it
+			if _, err := sub.Open(strings.TrimPrefix(r.URL.Path, "/")); err == nil {
+				// Add cache control headers to .ico, .css, .js, and .png files
+				contentType := r.Header.Get("Content-Type")
+				if r.Method == http.MethodGet && (contentType == "image/x-icon" || contentType == "text/css" || contentType == "application/javascript" || contentType == "image/png" || contentType == "image/jpeg") {
+					w.Header().Set("Cache-Control", "public, max-age=31536000") // Cache for 1 year
+				}
+				fileServer.ServeHTTP(w, r)
+				return
+			} else {
+				// Check if the file exists in /public/
+				publicRoot := resolvePublicRoot()
+				filePath := filepath.Join(publicRoot, r.URL.Path)
+				if info, err := os.Stat(filePath); err == nil {
+					// If the path is a directory, and not the root path, return 403
+					if r.URL.Path != "/" && info.IsDir() {
+						http.Error(w, "forbidden", http.StatusForbidden)
+						return
+					}
+					// Not a folder, serve the file from the public directory
+					http.ServeFile(w, r, filePath)
+					return
+				} else {
+					// Return 404 if the file/folder does not exist
+					http.NotFound(w, r)
+					return
+				}
 			}
-			fileServer.ServeHTTP(w, r)
 		})
 	} else {
 		log.Printf("failed to access embedded public dir: %v", err)

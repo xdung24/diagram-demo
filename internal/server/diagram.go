@@ -22,6 +22,8 @@ type Diagram struct {
 	Slug        string    `json:"slug"`
 	Description string    `json:"description"`
 	Code        string    `json:"code"`
+	SvgPath     string    `json:"svgPath"`
+	MmdPath     string    `json:"mmdPath"`
 	CreatedAt   time.Time `json:"createdAt"`
 	UpdatedAt   time.Time `json:"updatedAt"`
 }
@@ -84,84 +86,6 @@ func NewDiagramService(ctx context.Context, binary string, args ...string) (*Ser
 // ListTools returns the MCP tools exposed by the server.
 func (s *Service) ListTools(ctx context.Context) ([]mcp.Tool, error) {
 	return s.mcpclient.ListTools(ctx)
-}
-
-// Render invokes an MCP tool with diagram code and params.
-func (s *Service) Render(ctx context.Context, toolName string, code string, params map[string]any) (map[string]any, error) {
-	toolName = normalizeToolName(toolName)
-	if toolName == "generate_diagram" {
-		return s.renderMermaidToSVG(ctx, code, params)
-	}
-
-	args := mergeArgs(params, code)
-	if isGenerateTool(toolName) && getOutputPath(args) == "" {
-		args["outputPath"] = filepath.Join(os.TempDir(), "diagram.mmd")
-	}
-	res, err := s.mcpclient.CallTool(ctx, toolName, args)
-	if err != nil {
-		return nil, fmt.Errorf("rendering failed: %s", sanitizeError(err))
-	}
-	return enrichRenderResult(res), nil
-}
-
-func (s *Service) renderMermaidToSVG(ctx context.Context, code string, params map[string]any) (map[string]any, error) {
-	publicRoot := resolvePublicRoot()
-	outDir := filepath.Join(publicRoot, "diagram")
-	if dir, ok := params["outputDir"].(string); ok && dir != "" {
-		if filepath.IsAbs(dir) {
-			outDir = filepath.Clean(dir)
-		} else {
-			outDir = filepath.Clean(filepath.Join(".", dir))
-		}
-	}
-	if err := os.MkdirAll(outDir, 0o755); err != nil {
-		return nil, fmt.Errorf("create diagram output dir: %w", err)
-	}
-
-	name := fmt.Sprintf("diagram-%d", time.Now().UnixNano())
-	if n, ok := params["name"].(string); ok && n != "" {
-		name = sanitizeFileName(n)
-	}
-
-	svgPath := filepath.Join(outDir, name+".svg")
-	if p, ok := params["outputPath"].(string); ok && p != "" {
-		cleanPath := filepath.Clean(p)
-		if filepath.IsAbs(cleanPath) {
-			svgPath = cleanPath
-		} else {
-			svgPath = filepath.Join(".", cleanPath)
-		}
-		if filepath.Ext(svgPath) == "" {
-			svgPath += ".svg"
-		}
-	}
-	if err := os.MkdirAll(filepath.Dir(svgPath), 0o755); err != nil {
-		return nil, fmt.Errorf("create svg output dir: %w", err)
-	}
-
-	mmdPath := filepath.Join(filepath.Dir(svgPath), strings.TrimSuffix(filepath.Base(svgPath), filepath.Ext(svgPath))+".mmd")
-	if err := os.WriteFile(mmdPath, []byte(code), 0o644); err != nil {
-		return nil, fmt.Errorf("write mmd file: %w", err)
-	}
-
-	cmd := exec.CommandContext(ctx, s.binary, "render", "-i", mmdPath, "-f", "svg", "-o", svgPath)
-	if out, err := cmd.CombinedOutput(); err != nil {
-		return nil, fmt.Errorf("diagram-mcp render failed: %s: %s", err, strings.TrimSpace(string(out)))
-	}
-
-	svgURL := filepath.ToSlash(svgPath)
-	if rel, err := filepath.Rel(publicRoot, svgPath); err == nil && !strings.HasPrefix(rel, "..") {
-		svgURL = "/" + filepath.ToSlash(rel)
-	}
-	mmdURL := filepath.ToSlash(mmdPath)
-	if rel, err := filepath.Rel(publicRoot, mmdPath); err == nil && !strings.HasPrefix(rel, "..") {
-		mmdURL = "/" + filepath.ToSlash(rel)
-	}
-
-	return map[string]any{
-		"svgPath": svgURL,
-		"mmdPath": mmdURL,
-	}, nil
 }
 
 // Generate asks Mermaid MCP to generate the diagram.
@@ -254,11 +178,14 @@ func (s *Service) UpdateDiagram(slug string, input Diagram) (Diagram, error) {
 
 	current.Description = strings.TrimSpace(input.Description)
 	current.Code = strings.TrimSpace(input.Code)
+	current.MmdPath = input.MmdPath
+	current.SvgPath = input.SvgPath
 	current.UpdatedAt = time.Now().UTC()
 
 	if err := s.persistDiagramFolder(current); err != nil {
 		return Diagram{}, err
 	}
+	//
 	s.diagrams[current.Slug] = current
 	return current, nil
 }
@@ -282,6 +209,93 @@ func (s *Service) DeleteDiagram(slug string) error {
 	}
 	delete(s.diagrams, current.Slug)
 	return nil
+}
+
+// Render invokes an MCP tool with diagram code and params.
+func (s *Service) Render(ctx context.Context, toolName string, code string, params map[string]any) (map[string]any, error) {
+	toolName = normalizeToolName(toolName)
+	if toolName == "generate_diagram" {
+		return s.renderMermaidToSVG(ctx, code, params)
+	}
+
+	args := mergeArgs(params, code)
+	if isGenerateTool(toolName) && getOutputPath(args) == "" {
+		args["outputPath"] = filepath.Join(os.TempDir(), "diagram.mmd")
+	}
+	res, err := s.mcpclient.CallTool(ctx, toolName, args)
+	if err != nil {
+		return nil, fmt.Errorf("rendering failed: %s", sanitizeError(err))
+	}
+	return enrichRenderResult(res), nil
+}
+
+func (s *Service) renderMermaidToSVG(ctx context.Context, code string, params map[string]any) (map[string]any, error) {
+	publicRoot := resolvePublicRoot()
+	outDir := filepath.Join(publicRoot, "diagram")
+	if dir, ok := params["outputDir"].(string); ok && dir != "" {
+		if filepath.IsAbs(dir) {
+			outDir = filepath.Clean(dir)
+		} else {
+			outDir = filepath.Clean(filepath.Join(".", dir))
+		}
+	}
+	name := fmt.Sprintf("diagram-%d", time.Now().UnixNano())
+	if n, ok := params["name"].(string); ok && n != "" {
+		name = sanitizeFileName(n)
+	}
+	digramDir := filepath.Join(outDir, name)
+	if err := os.MkdirAll(digramDir, 0o755); err != nil {
+		return nil, fmt.Errorf("create diagram output dir: %w", err)
+	}
+
+	svgPath := filepath.Join(digramDir, "diagram.svg")
+	if p, ok := params["outputPath"].(string); ok && p != "" {
+		cleanPath := filepath.Clean(p)
+		if filepath.IsAbs(cleanPath) {
+			svgPath = cleanPath
+		} else {
+			svgPath = filepath.Join(".", cleanPath)
+		}
+		if filepath.Ext(svgPath) == "" {
+			svgPath += ".svg"
+		}
+	}
+	if err := os.MkdirAll(filepath.Dir(svgPath), 0o755); err != nil {
+		return nil, fmt.Errorf("create svg output dir: %w", err)
+	}
+
+	mmdPath := filepath.Join(filepath.Dir(svgPath), strings.TrimSuffix(filepath.Base(svgPath), filepath.Ext(svgPath))+".mmd")
+	if err := os.WriteFile(mmdPath, []byte(code), 0o644); err != nil {
+		return nil, fmt.Errorf("write mmd file: %w", err)
+	}
+
+	cmd := exec.CommandContext(ctx, s.binary, "render", "-i", mmdPath, "-f", "svg", "-o", svgPath)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return nil, fmt.Errorf("diagram-mcp render failed: %s: %s", err, strings.TrimSpace(string(out)))
+	}
+
+	svgURL := filepath.ToSlash(svgPath)
+	if rel, err := filepath.Rel(publicRoot, svgPath); err == nil && !strings.HasPrefix(rel, "..") {
+		svgURL = "/" + filepath.ToSlash(rel)
+	}
+	mmdURL := filepath.ToSlash(mmdPath)
+	if rel, err := filepath.Rel(publicRoot, mmdPath); err == nil && !strings.HasPrefix(rel, "..") {
+		mmdURL = "/" + filepath.ToSlash(rel)
+	}
+
+	// Store svgPath and mmdPath to diagram.json for later retrieval
+	diagram, ok := s.diagrams[name]
+	if ok {
+		diagram.SvgPath = svgURL
+		diagram.MmdPath = mmdURL
+		s.diagrams[name] = diagram
+		s.persistDiagramFolder(diagram)
+	}
+
+	return map[string]any{
+		"svgPath": svgURL,
+		"mmdPath": mmdURL,
+	}, nil
 }
 
 func diagramFolderName(item Diagram) string {
@@ -309,6 +323,8 @@ func (s *Service) persistDiagramFolder(item Diagram) error {
 		"slug":        item.Slug,
 		"createdAt":   item.CreatedAt.Format(time.RFC3339),
 		"updatedAt":   item.UpdatedAt.Format(time.RFC3339),
+		"svgPath":     item.SvgPath,
+		"mmdPath":     item.MmdPath,
 		"description": item.Description,
 		"code":        item.Code,
 	}, "", "  ")

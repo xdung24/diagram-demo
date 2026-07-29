@@ -15,3 +15,5 @@
 /public/diagram/*.drawio
 /public/diagram/*.json
 /public/diagram/*/*.json
+/public/diagram/*/*.mmd
+/public/diagram/*/*.svg

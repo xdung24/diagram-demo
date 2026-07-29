@@ -7,6 +7,87 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+    .preview-shell {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      min-height: 100%;
+      overflow: auto;
+    }
+    .preview-image {
+      max-width: 100%;
+      max-height: 100%;
+      transform-origin: center center;
+      transition: transform 0.2s ease;
+      cursor: grab;
+      touch-action: none;
+      user-select: none;
+    }
+    .preview-image.is-dragging {
+      cursor: grabbing;
+    }
+    .preview-toolbar {
+      position: absolute;
+      top: 4px;
+      right: 10px;
+      display: flex;
+      gap: 4px;
+      z-index: 10;
+    }
+    .preview-toolbar button {
+      width: 24px;
+      height: 24px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      border: 1px solid rgba(15, 23, 42, 0.16);
+      background: rgba(255, 255, 255, 0.92);
+      color: #0f172a;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.12);
+      cursor: pointer;
+      padding: 0;
+      transition: transform 0.2s ease, background-color 0.2s ease;
+      position: relative;
+    }
+    .preview-toolbar button:hover {
+      transform: translateY(-1px);
+      background: #f8fafc;
+    }
+    .preview-toolbar button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+    .preview-toolbar button::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 4px 8px;
+      border-radius: 6px;
+      background: rgba(15, 23, 42, 0.9);
+      color: #fff;
+      font-size: 11px;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+    .preview-toolbar button:hover::after {
+      opacity: 1;
+    }
+    .output-shell:fullscreen {
+      background: #fff;
+      color: #0f172a;
+      padding: 1rem;
+    }
+    .output-shell:fullscreen .preview-shell {
+      min-height: calc(100vh - 2rem);
+    }
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen">
@@ -57,7 +138,10 @@
             <p class="text-xs text-slate-400">Rendered output for the current diagram.</p>
           </div>
         </div>
-        <div id="output" class="min-h-[320px] rounded-lg border border-slate-800 bg-white p-3 text-slate-900 overflow-auto"></div>
+        <div id="output" class="output-shell min-h-[320px] rounded-lg border border-slate-800 bg-white p-3 text-slate-900 overflow-auto"></div>
+        <div id="downloadSvg" class="hidden">
+          <a id="downloadSvgLink" href="#" download="diagram.svg" class="rounded-lg border border-slate-700 px-3 py-2 text-sm font-medium hover:bg-slate-800">Download SVG</a>
+        </div>
         <div id="error" class="hidden rounded-lg border border-rose-800 bg-rose-950/40 p-3 text-sm text-rose-200"></div>
       </div>
     </section>
@@ -75,6 +159,20 @@
     const outputEl = document.getElementById('output');
     const errorEl = document.getElementById('error');
     const logsEl = document.getElementById('logs');
+    let zoomInBtn = null;
+    let zoomOutBtn = null;
+    let zoomResetBtn = null;
+    let fullscreenBtn = null;
+    let previewImage = null;
+    let previewShell = null;
+    let previewScale = 1;
+    let previewOffsetX = 0;
+    let previewOffsetY = 0;
+    let isDraggingPreview = false;
+    let dragStartX = 0;
+    let dragStartY = 0;
+    let dragOriginX = 0;
+    let dragOriginY = 0;
     
     function setError(text) {
       if (!text) {
@@ -85,6 +183,138 @@
       errorEl.classList.remove('hidden');
       errorEl.textContent = text;
       console.log('Error:', text);
+    }
+
+    function setPreviewButtonsEnabled(hasImage) {
+      const enabled = Boolean(hasImage);
+      if (zoomInBtn) {
+        zoomInBtn.disabled = !enabled;
+      }
+      if (zoomOutBtn) {
+        zoomOutBtn.disabled = !enabled;
+      }
+      if (zoomResetBtn) {
+        zoomResetBtn.disabled = !enabled;
+      }
+      if (fullscreenBtn) {
+        fullscreenBtn.disabled = !enabled;
+      }
+    }
+
+    function updatePreviewZoom() {
+      if (!previewImage) {
+        return;
+      }
+      previewImage.style.transform = `translate(${previewOffsetX}px, ${previewOffsetY}px) scale(${previewScale})`;
+    }
+
+    function renderImagePreview(src, alt = 'Rendered diagram') {
+      outputEl.innerHTML = `
+        <div class="preview-shell">
+          <div class="preview-toolbar">
+            <button type="button" id="zoomInBtn" data-tooltip="Zoom in" aria-label="Zoom in">+</button>
+            <button type="button" id="zoomOutBtn" data-tooltip="Zoom out" aria-label="Zoom out">−</button>
+            <button type="button" id="zoomResetBtn" data-tooltip="Reset zoom" aria-label="Reset zoom">↺</button>
+            <button type="button" id="fullscreenBtn" data-tooltip="Fullscreen" aria-label="Fullscreen">⤢</button>
+          </div>
+          <img src="${src}" alt="${alt}" class="preview-image" />
+        </div>
+      `;
+      zoomInBtn = document.getElementById('zoomInBtn');
+      zoomOutBtn = document.getElementById('zoomOutBtn');
+      zoomResetBtn = document.getElementById('zoomResetBtn');
+      fullscreenBtn = document.getElementById('fullscreenBtn');
+      previewImage = outputEl.querySelector('.preview-image');
+      previewShell = outputEl.querySelector('.preview-shell');
+      attachPreviewControls();
+      updatePreviewZoom();
+      setPreviewButtonsEnabled(true);
+    }
+
+    function renderTextPreview(text) {
+      outputEl.innerHTML = `<pre class="whitespace-pre-wrap text-sm">${text}</pre>`;
+      setPreviewButtonsEnabled(false);
+    }
+
+    function zoomPreview(delta) {
+      if (!previewImage) {
+        return;
+      }
+      previewScale = Math.min(3, Math.max(0.5, previewScale + delta));
+      updatePreviewZoom();
+    }
+
+    function resetPreviewZoom() {
+      previewScale = 1;
+      previewOffsetX = 0;
+      previewOffsetY = 0;
+      updatePreviewZoom();
+    }
+
+    async function togglePreviewFullscreen() {
+      if (!document.fullscreenElement) {
+        try {
+          await outputEl.requestFullscreen();
+        } catch (err) {
+          setError('Unable to enter fullscreen');
+        }
+        return;
+      }
+      await document.exitFullscreen();
+    }
+
+    function handlePreviewPointerDown(event) {
+      if (!previewImage || previewScale <= 1) {
+        return;
+      }
+      isDraggingPreview = true;
+      previewImage.classList.add('is-dragging');
+      dragStartX = event.clientX;
+      dragStartY = event.clientY;
+      dragOriginX = previewOffsetX;
+      dragOriginY = previewOffsetY;
+      event.preventDefault();
+    }
+
+    function handlePreviewPointerMove(event) {
+      if (!isDraggingPreview || !previewImage || previewScale <= 1) {
+        return;
+      }
+      previewOffsetX = dragOriginX + (event.clientX - dragStartX);
+      previewOffsetY = dragOriginY + (event.clientY - dragStartY);
+      updatePreviewZoom();
+      event.preventDefault();
+    }
+
+    function stopPreviewDragging() {
+      isDraggingPreview = false;
+      if (previewImage) {
+        previewImage.classList.remove('is-dragging');
+      }
+    }
+
+    function attachPreviewControls() {
+      if (!zoomInBtn || !zoomOutBtn || !zoomResetBtn || !fullscreenBtn) {
+        return;
+      }
+      zoomInBtn.addEventListener('click', () => zoomPreview(0.25));
+      zoomOutBtn.addEventListener('click', () => zoomPreview(-0.25));
+      zoomResetBtn.addEventListener('click', resetPreviewZoom);
+      fullscreenBtn.addEventListener('click', togglePreviewFullscreen);
+      document.addEventListener('fullscreenchange', () => {
+        if (!fullscreenBtn) {
+          return;
+        }
+        fullscreenBtn.setAttribute('data-tooltip', document.fullscreenElement === outputEl ? 'Exit fullscreen' : 'Fullscreen');
+        fullscreenBtn.setAttribute('aria-label', document.fullscreenElement === outputEl ? 'Exit fullscreen' : 'Fullscreen');
+      });
+
+      if (previewImage) {
+        previewImage.addEventListener('pointerdown', handlePreviewPointerDown);
+        window.addEventListener('pointermove', handlePreviewPointerMove);
+        window.addEventListener('pointerup', stopPreviewDragging);
+        window.addEventListener('pointerleave', stopPreviewDragging);
+      }
     }
 
     async function requestJson(path, options = {}) {
@@ -100,19 +330,26 @@
     async function loadDiagram() {
       const pathParts = window.location.pathname.split('/').filter(Boolean);
       const slug = pathParts.length > 1 ? pathParts[1] : '';
-      const id = slug || new URLSearchParams(window.location.search).get('id');
-      if (!id) {
-        outputEl.innerHTML = '<div class="text-sm text-slate-600">Pick a diagram from the landing page or create a new one first.</div>';
+      if (!slug) {
+        setError('Invalid diagram slug');
         return;
       }
       setError('');
       try {
-        const item = await requestJson(`/api/diagram/${encodeURIComponent(id)}`);
+        const item = await requestJson(`/api/diagram/${encodeURIComponent(slug)}`);
         document.getElementById('detailTitle').textContent = item.title || '';
         const updatedAt = new Date(item.updatedAt) || new Date();
         document.getElementById('updatedAt').textContent = `${updatedAt.toLocaleString()}`;
         document.getElementById('detailDescription').value = item.description || '';
         document.getElementById('detailCode').value = item.code || '';
+        if (item.svgPath) {
+          renderImagePreview(item.svgPath, 'Rendered diagram');
+          document.getElementById('downloadSvg').classList.remove('hidden');
+          document.getElementById('downloadSvgLink').href = item.svgPath;
+        } else {
+          renderTextPreview('No preview available yet.');
+          document.getElementById('downloadSvg').classList.add('hidden');
+        }
       } catch (err) {
         setError(err.message);
       }
@@ -140,6 +377,8 @@
 
     // Generate button
     async function generateDiagram() {
+      const pathParts = window.location.pathname.split('/').filter(Boolean);
+      const slug = pathParts.length > 1 ? pathParts[1] : '';
       const description = document.getElementById('detailDescription').value.trim();
       if (!description) {
         setError('Add a description first');
@@ -163,6 +402,8 @@
     
     // Render button
     async function renderDiagram() {
+      const pathParts = window.location.pathname.split('/').filter(Boolean);
+      const slug = pathParts.length > 1 ? pathParts[1] : '';
       const code = document.getElementById('detailCode').value;
       if (!code.trim()) {
         setError('Add some diagram code first');
@@ -173,15 +414,17 @@
         const data = await requestJson('/api/render', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ tool: 'generate_diagram', code, params: {} }),
+          body: JSON.stringify({ tool: 'generate_diagram', code, params: {'name': `${encodeURIComponent(slug)}` } }),
         });
         const result = data.result || {};
         if (result.svgPath) {
-          outputEl.innerHTML = `<img src="${result.svgPath}" alt="Rendered diagram" class="max-w-full" />`;
+          renderImagePreview(result.svgPath, 'Rendered diagram');
+          document.getElementById('downloadSvg').classList.remove('hidden');
+          document.getElementById('downloadSvgLink').href = result.svgPath;
         } else if (typeof result === 'string') {
-          outputEl.innerHTML = `<pre class="whitespace-pre-wrap text-sm">${result}</pre>`;
+          renderTextPreview(result);
         } else {
-          outputEl.innerHTML = '<div class="text-sm text-slate-600">Preview generated.</div>';
+          renderTextPreview('Preview generated.');
         }
       } catch (err) {
         setError(err.message);
