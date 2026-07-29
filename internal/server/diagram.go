@@ -85,11 +85,17 @@ func NewDiagramService(ctx context.Context, binary string, args ...string) (*Ser
 
 // ListTools returns the MCP tools exposed by the server.
 func (s *Service) ListTools(ctx context.Context) ([]mcp.Tool, error) {
+	if s == nil {
+		return nil, fmt.Errorf("service unavailable")
+	}
 	return s.mcpclient.ListTools(ctx)
 }
 
 // Generate asks Mermaid MCP to generate the diagram.
 func (s *Service) Generate(ctx context.Context, description string, toolName string, params map[string]any) (map[string]any, error) {
+	if s == nil {
+		return nil, fmt.Errorf("service unavailable")
+	}
 	res, err := s.llmclient.GenerateDiagramCode(ctx, description)
 	if err != nil {
 		return nil, fmt.Errorf("generating failed: %s", sanitizeError(err))
