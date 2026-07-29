@@ -12,8 +12,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/joho/godotenv"
-
+	"github.com/xdung24/diagram-demo/internal/dotenv"
 	"github.com/xdung24/diagram-demo/internal/mcp"
 	"github.com/xdung24/diagram-demo/internal/server"
 )
@@ -35,7 +34,7 @@ func resolvePort(argPort, envPort string) string {
 
 func main() {
 	// Load .env file automatically into the system environment
-	godotenv.Load()
+	dotenv.Load()
 
 	// Run basic commands
 	if len(os.Args) > 1 {
