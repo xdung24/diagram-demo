@@ -17,20 +17,11 @@ import (
 	"github.com/xdung24/diagram-demo/internal/server"
 )
 
+// app version
 var version = "dev"
 
 //go:embed public/**
 var publicFS embed.FS
-
-func resolvePort(argPort, envPort string) string {
-	if argPort != "" {
-		return argPort
-	}
-	if envPort != "" {
-		return envPort
-	}
-	return "8080"
-}
 
 func main() {
 	// Load .env file automatically into the system environment
@@ -45,9 +36,9 @@ func main() {
 		}
 	}
 
-	var port, diagramType string
-	flag.StringVar(&port, "p", "", "serve HTTP server at this port")
-	flag.StringVar(&port, "port", "", "serve HTTP server at this port")
+	var argPort, diagramType string
+	flag.StringVar(&argPort, "p", "", "serve HTTP server at this port")
+	flag.StringVar(&argPort, "port", "", "serve HTTP server at this port")
 	flag.StringVar(&diagramType, "type", "mermaid", "diagram type, one of: mermaid, bpmn, drawio")
 
 	flag.Usage = func() {
@@ -61,16 +52,24 @@ func main() {
 
 	flag.Parse()
 
-	port = resolvePort(port, os.Getenv("PORT"))
+	// Server port
+	port := "8080"
+	if os.Getenv("PORT") != "" {
+		port = os.Getenv("PORT")
+	}
+	if argPort != "" {
+		port = argPort
+	}
 
+	// App contxt
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
+	// diagram service
 	binary, err := mcp.FindDiagramMCPBinary()
 	if err != nil {
 		log.Printf("failed to locate or download diagram-mcp: %v", err)
 	}
-
 	diagramService, err := server.NewDiagramService(ctx, binary, diagramType+"-mcp")
 	if err != nil {
 		log.Printf("failed to start MCP client: %v", err)
