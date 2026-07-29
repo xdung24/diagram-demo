@@ -104,9 +104,9 @@ func CreateHttpServer(publicFS fs.FS, svc *Service) http.Handler {
 				return
 			}
 			var req struct {
-				Prompt string         `json:"prompt"`
-				Tool   string         `json:"tool"`
-				Params map[string]any `json:"params"`
+				Description string         `json:"description"`
+				Tool        string         `json:"tool"`
+				Params      map[string]any `json:"params"`
 			}
 			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 				http.Error(w, "bad request", http.StatusBadRequest)
@@ -114,7 +114,7 @@ func CreateHttpServer(publicFS fs.FS, svc *Service) http.Handler {
 			}
 			ctx, cancel := NewContext()
 			defer cancel()
-			res, err := svc.Generate(ctx, req.Prompt, req.Tool, req.Params)
+			res, err := svc.Generate(ctx, req.Description, req.Tool, req.Params)
 			if err != nil {
 				log.Printf("failed to generate diagram: %v", err)
 				writeJSON(w, http.StatusBadRequest, map[string]any{"error": sanitizeError(err)})

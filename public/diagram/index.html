@@ -95,6 +95,29 @@
       }
       return data;
     }
+  
+    // Load diagram
+    async function loadDiagram() {
+      const pathParts = window.location.pathname.split('/').filter(Boolean);
+      const slug = pathParts.length > 1 ? pathParts[1] : '';
+      const id = slug || new URLSearchParams(window.location.search).get('id');
+      if (!id) {
+        outputEl.innerHTML = '<div class="text-sm text-slate-600">Pick a diagram from the landing page or create a new one first.</div>';
+        return;
+      }
+      setError('');
+      try {
+        const item = await requestJson(`/api/diagram/${encodeURIComponent(id)}`);
+        document.getElementById('detailTitle').textContent = item.title || '';
+        const updatedAt = new Date(item.updatedAt) || new Date();
+        document.getElementById('updatedAt').textContent = `${updatedAt.toLocaleString()}`;
+        document.getElementById('detailDescription').value = item.description || '';
+        document.getElementById('detailCode').value = item.code || '';
+      } catch (err) {
+        setError(err.message);
+      }
+    }
+    loadDiagram();
 
     // Save button
     async function saveDiagram() {
@@ -134,6 +157,7 @@
       } catch (err) {
         setError(err.message);
       }
+      renderDiagram();
     };
     document.getElementById('generateBtn').addEventListener('click', generateDiagram);
     
@@ -180,29 +204,7 @@
     };
     document.getElementById('deleteBtn').addEventListener('click', deleteDiagram);
 
-    async function loadDiagram() {
-      const pathParts = window.location.pathname.split('/').filter(Boolean);
-      const slug = pathParts.length > 1 ? pathParts[1] : '';
-      const id = slug || new URLSearchParams(window.location.search).get('id');
-      if (!id) {
-        outputEl.innerHTML = '<div class="text-sm text-slate-600">Pick a diagram from the landing page or create a new one first.</div>';
-        return;
-      }
-      setError('');
-      try {
-        const item = await requestJson(`/api/diagram/${encodeURIComponent(id)}`);
-        document.getElementById('detailTitle').textContent = item.title || '';
-        const updatedAt = new Date(item.updatedAt) || new Date();
-        document.getElementById('updatedAt').textContent = `${updatedAt.toLocaleString()}`;
-        document.getElementById('detailDescription').value = item.description || '';
-        document.getElementById('detailCode').value = item.code || '';
-      } catch (err) {
-        setError(err.message);
-      }
-    }
-
-    loadDiagram();
-
+    // Debugger
     function appendLog(text) {
       const row = document.createElement('div');
       row.textContent = text;
