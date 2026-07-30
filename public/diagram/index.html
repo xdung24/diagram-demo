@@ -3,6 +3,7 @@
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="description" content="Diagram MCP Demo - Create new diagrams, manage your list, and open a detail view whenever you want to update or delete an entry.">
 		<title>Diagram MCP Demo</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <link rel="icon" type="image/png" href="/favicon.png">
@@ -159,7 +160,8 @@
         <p id="editorLoadingMessage" class="text-sm font-medium">Loading diagram...</p>
       </div>
     </div>
-    <header class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+    
+    <header class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between" role="navigation">
       <div>
         <a href="/"><h1 class="text-2xl font-semibold">Diagram MCP Demo</h1></a>
       </div>
@@ -168,7 +170,7 @@
       </div>
     </header>
 
-    <section class="grid gap-6 lg:grid-cols-[minmax(320px,0.95fr)_minmax(380px,1.05fr)]">
+    <section class="grid gap-6 lg:grid-cols-[minmax(320px,0.95fr)_minmax(380px,1.05fr)]" role="main">
       <div id="editorPanel" class="relative rounded-xl border border-slate-800 bg-slate-900 p-5 space-y-4" aria-busy="false">
 
         <div class="flex items-center justify-between">
@@ -211,6 +213,7 @@
         </div>
       </div>
     </section>
+
     <div id="error" class="hidden flex items-center justify-between gap-2 rounded-lg border border-rose-800 bg-rose-950/40 p-3 text-sm text-rose-200">
       <span id="error-text"></span>
       <button 
@@ -224,6 +227,7 @@
         </svg>
       </button>
     </div>
+
     <section class="rounded-xl border border-slate-800 bg-slate-900 p-4">
       <div class="flex items-center justify-between mb-2">
         <h2 class="text-lg font-semibold">Debugger</h2>
@@ -447,8 +451,11 @@
       setActionLoading(null, true, 'Loading...');
       try {
         const item = await requestJson(`/api/diagram/${encodeURIComponent(slug)}`);
-        document.getElementById('detailTitle').textContent = item.title || '';
-        document.title = `${item.title + ' - ' || ''} Diagram MCP Demo`;
+        if(item.title) {
+          document.getElementById('detailTitle').textContent = item.title ;
+          document.title = `${item.title} - Diagram MCP Demo`;
+          document.querySelector('meta[name="description"]').setAttribute('content', `${item.title} - Diagram MCP Demo`); 
+        }
         const updatedAt = new Date(item.updatedAt) || new Date();
         document.getElementById('updatedAt').textContent = `${updatedAt.toLocaleString()}`;
         document.getElementById('detailDescription').value = item.description || '';
