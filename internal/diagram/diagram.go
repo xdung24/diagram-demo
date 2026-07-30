@@ -280,14 +280,15 @@ func (s *Service) renderMermaidToSVG(ctx context.Context, code string, params ma
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return nil, fmt.Errorf("diagram-mcp render failed: %s: %s", err, strings.TrimSpace(string(out)))
 	}
-
+	now := time.Now().Unix()
 	svgURL := filepath.ToSlash(svgPath)
 	if rel, err := filepath.Rel(publicRoot, svgPath); err == nil && !strings.HasPrefix(rel, "..") {
-		svgURL = "/" + filepath.ToSlash(rel)
+		// Add generated timestamp to bypass browser cache
+		svgURL = "/" + filepath.ToSlash(rel) + "?t=" + fmt.Sprint(now)
 	}
 	mmdURL := filepath.ToSlash(mmdPath)
 	if rel, err := filepath.Rel(publicRoot, mmdPath); err == nil && !strings.HasPrefix(rel, "..") {
-		mmdURL = "/" + filepath.ToSlash(rel)
+		mmdURL = "/" + filepath.ToSlash(rel) + "?t=" + fmt.Sprint(now)
 	}
 
 	// Store svgPath and mmdPath to diagram.json for later retrieval

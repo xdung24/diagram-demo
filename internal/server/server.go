@@ -213,27 +213,28 @@ func CreateHttpServer(publicFS fs.FS, svc *diagram.Service) http.Handler {
 		})
 		// All other routes, serve static content from embedded FS or /public/ folder
 		mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-			// If file exists in embedded FS, serve it
-			if _, err := sub.Open(strings.TrimPrefix(r.URL.Path, "/")); err == nil {
-				// Add cache control headers to .ico, .css, .js, and .png files
-				contentType := r.Header.Get("Content-Type")
-				if r.Method == http.MethodGet && (contentType == "image/x-icon" || contentType == "text/css" || contentType == "application/javascript" || contentType == "image/png" || contentType == "image/jpeg") {
-					w.Header().Set("Cache-Control", "public, max-age=31536000") // Cache for 1 year
+
+			// Check if the file exists in /public/
+			publicRoot := helper.ResolvePublicRoot()
+			filePath := filepath.Join(publicRoot, r.URL.Path)
+			if info, err := os.Stat(filePath); err == nil {
+				// If the path is a directory, and not the root path, return 403
+				if r.URL.Path != "/" && info.IsDir() {
+					http.Error(w, "forbidden", http.StatusForbidden)
+					return
 				}
-				fileServer.ServeHTTP(w, r)
+				// Not a folder, serve the file from the public directory
+				http.ServeFile(w, r, filePath)
 				return
 			} else {
-				// Check if the file exists in /public/
-				publicRoot := helper.ResolvePublicRoot()
-				filePath := filepath.Join(publicRoot, r.URL.Path)
-				if info, err := os.Stat(filePath); err == nil {
-					// If the path is a directory, and not the root path, return 403
-					if r.URL.Path != "/" && info.IsDir() {
-						http.Error(w, "forbidden", http.StatusForbidden)
-						return
+				// If file exists in embedded FS, serve it
+				if _, err := sub.Open(strings.TrimPrefix(r.URL.Path, "/")); err == nil {
+					// Add cache control headers to .ico, .css, .js, and .png files
+					contentType := r.Header.Get("Content-Type")
+					if r.Method == http.MethodGet && (contentType == "image/x-icon" || contentType == "text/css" || contentType == "application/javascript" || contentType == "image/png" || contentType == "image/jpeg") {
+						w.Header().Set("Cache-Control", "public, max-age=31536000") // Cache for 1 year
 					}
-					// Not a folder, serve the file from the public directory
-					http.ServeFile(w, r, filePath)
+					fileServer.ServeHTTP(w, r)
 					return
 				} else {
 					// Return 404 if the file/folder does not exist
