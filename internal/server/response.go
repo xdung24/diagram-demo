@@ -103,6 +103,11 @@ func writeStatusPage(w http.ResponseWriter, status int, publicFS fs.FS) {
 func loggingMiddleware(next http.Handler) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Hide /health request from logs
+		if r.URL.Path == "/health" {
+			next.ServeHTTP(w, r)
+			return
+		}
 		start := time.Now()
 		wrapped := &CustomResponseWriter{ResponseWriter: w, status: http.StatusOK}
 		next.ServeHTTP(wrapped, r)
