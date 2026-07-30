@@ -3,6 +3,8 @@ package diagram
 import (
 	"os"
 	"strings"
+
+	anyascii "github.com/anyascii/go"
 )
 
 func normalizeToolName(toolName string) string {
@@ -61,21 +63,7 @@ func slugifyTitle(title string) string {
 		return "diagram"
 	}
 
-	var builder strings.Builder
-	prevDash := false
-	for _, r := range text {
-		switch {
-		case r >= 'a' && r <= 'z', r >= '0' && r <= '9':
-			builder.WriteRune(r)
-			prevDash = false
-		default:
-			if builder.Len() > 0 && !prevDash {
-				builder.WriteRune('-')
-				prevDash = true
-			}
-		}
-	}
-	return strings.Trim(builder.String(), "-")
+	return anyascii.Transliterate(text)
 }
 
 func sanitizeFileName(name string) string {
