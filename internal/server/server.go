@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/fs"
@@ -9,9 +10,18 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
+
+	"github.com/xdung24/diagram-demo/internal/diagram"
+	"github.com/xdung24/diagram-demo/internal/helper"
 )
 
-func CreateHttpServer(publicFS fs.FS, svc *Service) http.Handler {
+// NewContext creates a request-scoped context with 45s timeout.
+func NewContext() (context.Context, context.CancelFunc) {
+	return context.WithTimeout(context.Background(), 45*time.Second)
+}
+
+func CreateHttpServer(publicFS fs.FS, svc *diagram.Service) http.Handler {
 	mux := http.NewServeMux()
 
 	// Diagram listing
@@ -19,19 +29,19 @@ func CreateHttpServer(publicFS fs.FS, svc *Service) http.Handler {
 		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			switch r.Method {
 			case http.MethodGet:
-				writeJSON(w, http.StatusOK, map[string]any{"diagrams": svc.ListDiagrams()})
+				helper.WriteJSON(w, http.StatusOK, map[string]any{"diagrams": svc.ListDiagrams()})
 			case http.MethodPost:
-				var input Diagram
+				var input diagram.Diagram
 				if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 					http.Error(w, "bad request", http.StatusBadRequest)
 					return
 				}
 				item, err := svc.CreateDiagram(input)
 				if err != nil {
-					writeJSON(w, http.StatusBadRequest, map[string]any{"error": sanitizeError(err)})
+					helper.WriteJSON(w, http.StatusBadRequest, map[string]any{"error": helper.SanitizeError(err)})
 					return
 				}
-				writeJSON(w, http.StatusCreated, item)
+				helper.WriteJSON(w, http.StatusCreated, item)
 			default:
 				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			}
@@ -47,28 +57,28 @@ func CreateHttpServer(publicFS fs.FS, svc *Service) http.Handler {
 			case http.MethodGet:
 				item, err := svc.GetDiagram(slug)
 				if err != nil {
-					writeJSON(w, http.StatusBadRequest, map[string]any{"error": sanitizeError(err)})
+					helper.WriteJSON(w, http.StatusBadRequest, map[string]any{"error": helper.SanitizeError(err)})
 					return
 				}
-				writeJSON(w, http.StatusOK, item)
+				helper.WriteJSON(w, http.StatusOK, item)
 			case http.MethodPost:
-				var input Diagram
+				var input diagram.Diagram
 				if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 					http.Error(w, "bad request", http.StatusBadRequest)
 					return
 				}
 				item, err := svc.UpdateDiagram(slug, input)
 				if err != nil {
-					writeJSON(w, http.StatusBadRequest, map[string]any{"error": sanitizeError(err)})
+					helper.WriteJSON(w, http.StatusBadRequest, map[string]any{"error": helper.SanitizeError(err)})
 					return
 				}
-				writeJSON(w, http.StatusOK, item)
+				helper.WriteJSON(w, http.StatusOK, item)
 			case http.MethodDelete:
 				if err := svc.DeleteDiagram(slug); err != nil {
-					writeJSON(w, http.StatusBadRequest, map[string]any{"error": sanitizeError(err)})
+					helper.WriteJSON(w, http.StatusBadRequest, map[string]any{"error": helper.SanitizeError(err)})
 					return
 				}
-				writeJSON(w, http.StatusOK, map[string]any{"deleted": true})
+				helper.WriteJSON(w, http.StatusOK, map[string]any{"deleted": true})
 			default:
 				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			}
@@ -88,10 +98,10 @@ func CreateHttpServer(publicFS fs.FS, svc *Service) http.Handler {
 			tools, err := svc.ListTools(ctx)
 			if err != nil {
 				log.Printf("failed to list tools: %v", err)
-				writeJSON(w, http.StatusInternalServerError, map[string]any{"error": sanitizeError(err)})
+				helper.WriteJSON(w, http.StatusInternalServerError, map[string]any{"error": helper.SanitizeError(err)})
 				return
 			}
-			writeJSON(w, http.StatusOK, map[string]any{"tools": tools})
+			helper.WriteJSON(w, http.StatusOK, map[string]any{"tools": tools})
 		})
 		handler.ServeHTTP(w, r)
 	})
@@ -117,10 +127,10 @@ func CreateHttpServer(publicFS fs.FS, svc *Service) http.Handler {
 			res, err := svc.Generate(ctx, req.Description, req.Tool, req.Params)
 			if err != nil {
 				log.Printf("failed to generate diagram: %v", err)
-				writeJSON(w, http.StatusBadRequest, map[string]any{"error": sanitizeError(err)})
+				helper.WriteJSON(w, http.StatusBadRequest, map[string]any{"error": helper.SanitizeError(err)})
 				return
 			}
-			writeJSON(w, http.StatusOK, map[string]any{"generatedCode": res["generatedCode"]})
+			helper.WriteJSON(w, http.StatusOK, map[string]any{"generatedCode": res["generatedCode"]})
 		})
 		handler.ServeHTTP(w, r)
 	})
@@ -146,10 +156,10 @@ func CreateHttpServer(publicFS fs.FS, svc *Service) http.Handler {
 			res, err := svc.Render(ctx, req.Tool, req.Code, req.Params)
 			if err != nil {
 				log.Printf("failed to render diagram: %v", err)
-				writeJSON(w, http.StatusBadRequest, map[string]any{"error": sanitizeError(err)})
+				helper.WriteJSON(w, http.StatusBadRequest, map[string]any{"error": helper.SanitizeError(err)})
 				return
 			}
-			writeJSON(w, http.StatusOK, map[string]any{"result": res})
+			helper.WriteJSON(w, http.StatusOK, map[string]any{"result": res})
 		})
 		handler.ServeHTTP(w, r)
 	})
@@ -170,7 +180,7 @@ func CreateHttpServer(publicFS fs.FS, svc *Service) http.Handler {
 			fmt.Fprintf(w, "data: connected\n\n")
 			flusher.Flush()
 			for entry := range ch {
-				fmt.Fprintf(w, "data: %s\n\n", sanitizeLog(entry))
+				fmt.Fprintf(w, "data: %s\n\n", helper.SanitizeLog(entry))
 				flusher.Flush()
 			}
 		})
@@ -202,7 +212,7 @@ func CreateHttpServer(publicFS fs.FS, svc *Service) http.Handler {
 				return
 			} else {
 				// Check if the file exists in /public/
-				publicRoot := resolvePublicRoot()
+				publicRoot := helper.ResolvePublicRoot()
 				filePath := filepath.Join(publicRoot, r.URL.Path)
 				if info, err := os.Stat(filePath); err == nil {
 					// If the path is a directory, and not the root path, return 403
@@ -229,7 +239,7 @@ func CreateHttpServer(publicFS fs.FS, svc *Service) http.Handler {
 }
 
 func serveDiagramRoute(w http.ResponseWriter, r *http.Request) {
-	publicRoot := resolvePublicRoot()
+	publicRoot := helper.ResolvePublicRoot()
 	indexPath := filepath.Join(publicRoot, "diagram", "index.html")
 
 	slug := r.PathValue("slug")

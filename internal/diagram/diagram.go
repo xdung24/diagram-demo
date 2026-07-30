@@ -1,4 +1,4 @@
-package server
+package diagram
 
 import (
 	"context"
@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/xdung24/diagram-demo/internal/ai"
+	"github.com/xdung24/diagram-demo/internal/helper"
 	"github.com/xdung24/diagram-demo/internal/mcp"
 )
 
@@ -54,7 +55,7 @@ func NewDiagramService(ctx context.Context, binary string, args ...string) (*Ser
 
 	// Load list of diagrams from the public/diagram folder if it exists
 	log.Printf("loading diagrams from public/diagram folder")
-	publicRoot := resolvePublicRoot()
+	publicRoot := helper.ResolvePublicRoot()
 	diagramRoot := filepath.Join(publicRoot, "diagram")
 	found := 0
 	now := time.Now().UTC()
@@ -98,7 +99,7 @@ func (s *Service) Generate(ctx context.Context, description string, toolName str
 	}
 	res, err := s.llmclient.GenerateDiagramCode(ctx, description)
 	if err != nil {
-		return nil, fmt.Errorf("generating failed: %s", sanitizeError(err))
+		return nil, fmt.Errorf("generating failed: %s", helper.SanitizeError(err))
 	}
 	return map[string]any{"generatedCode": res}, nil
 }
@@ -230,13 +231,13 @@ func (s *Service) Render(ctx context.Context, toolName string, code string, para
 	}
 	res, err := s.mcpclient.CallTool(ctx, toolName, args)
 	if err != nil {
-		return nil, fmt.Errorf("rendering failed: %s", sanitizeError(err))
+		return nil, fmt.Errorf("rendering failed: %s", helper.SanitizeError(err))
 	}
 	return enrichRenderResult(res), nil
 }
 
 func (s *Service) renderMermaidToSVG(ctx context.Context, code string, params map[string]any) (map[string]any, error) {
-	publicRoot := resolvePublicRoot()
+	publicRoot := helper.ResolvePublicRoot()
 	outDir := filepath.Join(publicRoot, "diagram")
 	if dir, ok := params["outputDir"].(string); ok && dir != "" {
 		if filepath.IsAbs(dir) {
@@ -312,7 +313,7 @@ func diagramFolderName(item Diagram) string {
 }
 
 func (s *Service) persistDiagramFolder(item Diagram) error {
-	publicRoot := resolvePublicRoot()
+	publicRoot := helper.ResolvePublicRoot()
 	diagramRoot := filepath.Join(publicRoot, "diagram")
 	if err := os.MkdirAll(diagramRoot, 0o755); err != nil {
 		return fmt.Errorf("create diagram root: %w", err)
@@ -341,7 +342,7 @@ func (s *Service) persistDiagramFolder(item Diagram) error {
 }
 
 func (s *Service) removeDiagramFolder(item Diagram) error {
-	publicRoot := resolvePublicRoot()
+	publicRoot := helper.ResolvePublicRoot()
 	dir := filepath.Join(publicRoot, "diagram", diagramFolderName(item))
 	if diagramFolderName(item) == "" || diagramFolderName(item) == "diagram" && item.Slug == "" {
 		return nil
@@ -355,9 +356,4 @@ func (s *Service) Close() error {
 		return nil
 	}
 	return s.mcpclient.Close()
-}
-
-// NewContext creates a request-scoped context with timeout.
-func NewContext() (context.Context, context.CancelFunc) {
-	return context.WithTimeout(context.Background(), 45*time.Second)
 }

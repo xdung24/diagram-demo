@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/xdung24/diagram-demo/internal/diagram"
 	"github.com/xdung24/diagram-demo/internal/dotenv"
 	"github.com/xdung24/diagram-demo/internal/mcp"
 	"github.com/xdung24/diagram-demo/internal/server"
@@ -70,7 +71,7 @@ func main() {
 	if err != nil {
 		log.Printf("failed to locate or download diagram-mcp: %v", err)
 	}
-	diagramService, err := server.NewDiagramService(ctx, binary, diagramType+"-mcp")
+	diagramService, err := diagram.NewDiagramService(ctx, binary, diagramType+"-mcp")
 	if err != nil {
 		log.Printf("failed to start MCP client: %v", err)
 		os.Exit(1)
