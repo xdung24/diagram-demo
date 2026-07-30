@@ -187,6 +187,18 @@ func CreateHttpServer(publicFS fs.FS, svc *diagram.Service) http.Handler {
 		handler.ServeHTTP(w, r)
 	})
 
+	// Health check
+	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != http.MethodGet {
+				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+				return
+			}
+			helper.WriteJSON(w, http.StatusOK, map[string]any{"status": "ok"})
+		})
+		handler.ServeHTTP(w, r)
+	})
+
 	// Static content
 	sub, err := fs.Sub(publicFS, "public")
 	if err == nil {

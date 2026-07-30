@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -79,6 +80,13 @@ func main() {
 	defer func() {
 		_ = diagramService.Close()
 	}()
+
+	// Start self-health-checker
+	healthCheckUrl := strings.ToLower(os.Getenv("HEALTH_CHECK_URL"))
+	if healthCheckUrl != "" {
+		log.Printf("starting self-health-checker for %s", healthCheckUrl)
+		go server.StartSelfHealthCheck(healthCheckUrl)
+	}
 
 	// Start the HTTP server
 	log.Printf("serving at %s", ":"+port)
