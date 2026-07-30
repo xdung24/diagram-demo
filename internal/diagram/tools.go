@@ -58,12 +58,14 @@ func mergeArgs(params map[string]any, code string) map[string]any {
 }
 
 func slugifyTitle(title string) string {
-	text := strings.TrimSpace(strings.ToLower(title))
-	if text == "" {
+	trimmed := strings.TrimSpace(title)
+	if trimmed == "" {
 		return "diagram"
 	}
-
-	return anyascii.Transliterate(text)
+	lowered := strings.ToLower(trimmed)
+	slugified := anyascii.Transliterate(lowered)
+	text := strings.ReplaceAll(slugified, " ", "-")
+	return text
 }
 
 func sanitizeFileName(name string) string {
