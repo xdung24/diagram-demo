@@ -19,5 +19,4 @@
 /public/diagram/*/*.svg
 
 # Add sample diagrams to the repository
-!/public/diagram/mass-hiring-process/*
 !/public/diagram/thuyet-trinh-hieu-qua/*

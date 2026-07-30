@@ -43,7 +43,6 @@ func selfHealthCheck(healthCheckURL string) {
 		now := time.Now()
 		if lastHealthLog.IsZero() || now.Sub(lastHealthLog) >= time.Hour {
 			lastHealthLog = now
-			log.Printf("Health check OK: %s", healthCheckURL)
 		}
 	}
 }
