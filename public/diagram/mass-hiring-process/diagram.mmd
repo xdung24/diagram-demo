@@ -1,0 +1,57 @@
+```mermaid
+flowchart TD
+    subgraph P1["1. Strategic Planning"]
+        A1["Define Standardized Job Profiles"]
+        A2["Set Target Metrics"]
+        A3["Assign Dedicated Recruitment Teams"]
+        A1 --> A2 --> A3
+    end
+
+    subgraph P2["2. High-Volume Sourcing"]
+        B1["Programmatic Advertising"]
+        B2["Career Fairs"]
+        B3["Simplified Mobile Application Forms"]
+    end
+
+    subgraph P3["3. Automated Initial Screening"]
+        C1["ATS Knockout Questions"]
+        C2["Online Skill & Situational Judgment Tests"]
+        C3["Asynchronous Video Interviews"]
+        C1 --> C2 --> C3
+    end
+
+    subgraph P4["4. Accelerated Selection"]
+        D1["Speed Interviews / Assessment Centers"]
+        D2["Evaluation via Standardized Rubrics"]
+        D3["Fast Hiring Decisions"]
+        D1 --> D2 --> D3
+    end
+
+    subgraph P5["5. Compliance & Background Checks"]
+        E1["Rigorous Financial Background Checks"]
+        E2["Credit Screening"]
+        E3["Criminal History Check"]
+        E4["AML Sanction Screening"]
+        E1 --> E2
+        E1 --> E3
+        E1 --> E4
+    end
+
+    subgraph P6["6. Offer & Batch Onboarding"]
+        F1["Automated Digital Offer Letters"]
+        F2["Batch Onboarding Cohorts"]
+        F3["Streamlined Training & Engagement"]
+        F4["Official Start Date"]
+        F1 --> F2 --> F3 --> F4
+    end
+
+    P1 --> P2
+    B1 --> C1
+    B2 --> C1
+    B3 --> C1
+    C3 --> D1
+    D3 -->|"Conditional Offer"| E1
+    E2 --> F1
+    E3 --> F1
+    E4 --> F1
+```

@@ -1,0 +1,85 @@
+<svg role="img" xmlns="http://www.w3.org/2000/svg" width="3792.15" height="1226" viewBox="0 0 3792.15 1226" font-family="sans-serif" font-size="14">
+  <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#333333"/></marker></defs>
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <g transform="translate(30,50)">
+    <rect x="-14" y="-34" width="302.96" height="274" fill="none" stroke="#9370DB" stroke-dasharray="4,3" rx="4"/>
+    <text x="-8" y="-20" fill="#333333">1. Strategic Planning</text>
+    <rect x="2945.27" y="-34" width="707.76" height="90" fill="none" stroke="#9370DB" stroke-dasharray="4,3" rx="4"/>
+    <text x="2951.27" y="-20" fill="#333333">2. High-Volume Sourcing</text>
+    <rect x="2897.41" y="58" width="323.99" height="274" fill="none" stroke="#9370DB" stroke-dasharray="4,3" rx="4"/>
+    <text x="2903.41" y="72" fill="#333333">3. Automated Initial Screening</text>
+    <rect x="2901.3" y="334" width="316.21" height="274" fill="none" stroke="#9370DB" stroke-dasharray="4,3" rx="4"/>
+    <text x="2907.3" y="348" fill="#333333">4. Accelerated Selection</text>
+    <rect x="2751.67" y="610" width="648.67" height="182" fill="none" stroke="#9370DB" stroke-dasharray="4,3" rx="4"/>
+    <text x="2757.67" y="624" fill="#333333">5. Compliance &amp; Background Checks</text>
+    <rect x="2690.98" y="794" width="293.65" height="366" fill="none" stroke="#9370DB" stroke-dasharray="4,3" rx="4"/>
+    <text x="2696.98" y="808" fill="#333333">6. Offer &amp; Batch Onboarding</text>
+    <path d="M137.48,42 L137.48,92" fill="none" stroke="#333333" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <path d="M137.48,134 L137.48,184" fill="none" stroke="#333333" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <path d="M3059.4,134 L3059.4,184" fill="none" stroke="#333333" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <path d="M3059.4,226 L3059.4,276" fill="none" stroke="#333333" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <path d="M3059.4,410 L3059.4,460" fill="none" stroke="#333333" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <path d="M3059.4,502 L3059.4,552" fill="none" stroke="#333333" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <path d="M2988.13,686 L2988.13,711 L2837.8,711 L2837.8,736" fill="none" stroke="#333333" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <path d="M3059.4,686 L3059.4,711 L3051.1,711 L3051.1,736" fill="none" stroke="#333333" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <path d="M3130.67,686 L3130.67,711 L3289.3,711 L3289.3,736" fill="none" stroke="#333333" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <path d="M2837.8,870 L2837.8,920" fill="none" stroke="#333333" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <path d="M2837.8,962 L2837.8,1012" fill="none" stroke="#333333" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <path d="M2837.8,1054 L2837.8,1104" fill="none" stroke="#333333" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <path d="M3717.59,42 L3717.59,67 L3236.17,67 L3236.17,92" fill="none" stroke="#333333" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <path d="M3059.4,42 L3059.4,92" fill="none" stroke="#333333" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <path d="M3268.42,42 L3268.42,67 L3026.67,67 L3026.67,92" fill="none" stroke="#333333" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <path d="M3508.17,42 L3508.17,67 L3092.14,67 L3092.14,92" fill="none" stroke="#333333" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <path d="M3059.4,318 L3059.4,368" fill="none" stroke="#333333" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <path d="M3059.4,594 L3059.4,644" fill="none" stroke="#333333" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <rect x="3003.88" y="605" width="111.04" height="18" fill="#ffffff"/>
+    <text x="3059.4" y="619" fill="#333333" text-anchor="middle" dy="-2">Conditional Offer</text>
+    <path d="M2837.8,778 L2837.8,828" fill="none" stroke="#333333" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <path d="M3051.1,778 L3051.1,803 L2799.1,803 L2799.1,828" fill="none" stroke="#333333" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <path d="M3289.3,778 L3289.3,803 L2876.5,803 L2876.5,828" fill="none" stroke="#333333" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <rect x="15.55" y="0" width="243.87" height="42" fill="#ECECFF" stroke="#9370DB"/>
+    <text fill="#333333" text-anchor="middle"><tspan x="137.48" y="25.9">Define Standardized Job Profiles</tspan></text>
+    <rect x="60.3" y="92" width="154.37" height="42" fill="#ECECFF" stroke="#9370DB"/>
+    <text fill="#333333" text-anchor="middle"><tspan x="137.48" y="117.9">Set Target Metrics</tspan></text>
+    <rect x="0" y="184" width="274.96" height="42" fill="#ECECFF" stroke="#9370DB"/>
+    <text fill="#333333" text-anchor="middle"><tspan x="137.48" y="209.9">Assign Dedicated Recruitment Teams</tspan></text>
+    <rect x="2959.27" y="0" width="200.26" height="42" fill="#ECECFF" stroke="#9370DB"/>
+    <text fill="#333333" text-anchor="middle"><tspan x="3059.4" y="25.9">Programmatic Advertising</tspan></text>
+    <rect x="3209.53" y="0" width="117.78" height="42" fill="#ECECFF" stroke="#9370DB"/>
+    <text fill="#333333" text-anchor="middle"><tspan x="3268.42" y="25.9">Career Fairs</tspan></text>
+    <rect x="3377.31" y="0" width="261.72" height="42" fill="#ECECFF" stroke="#9370DB"/>
+    <text fill="#333333" text-anchor="middle"><tspan x="3508.17" y="25.9">Simplified Mobile Application Forms</tspan></text>
+    <rect x="2961.2" y="92" width="196.41" height="42" fill="#ECECFF" stroke="#9370DB"/>
+    <text fill="#333333" text-anchor="middle"><tspan x="3059.4" y="117.9">ATS Knockout Questions</tspan></text>
+    <rect x="2911.41" y="184" width="295.99" height="42" fill="#ECECFF" stroke="#9370DB"/>
+    <text fill="#333333" text-anchor="middle"><tspan x="3059.4" y="209.9">Online Skill &amp; Situational Judgment Tests</tspan></text>
+    <rect x="2941.75" y="276" width="235.3" height="42" fill="#ECECFF" stroke="#9370DB"/>
+    <text fill="#333333" text-anchor="middle"><tspan x="3059.4" y="301.9">Asynchronous Video Interviews</tspan></text>
+    <rect x="2915.3" y="368" width="288.21" height="42" fill="#ECECFF" stroke="#9370DB"/>
+    <text fill="#333333" text-anchor="middle"><tspan x="3059.4" y="393.9">Speed Interviews / Assessment Centers</tspan></text>
+    <rect x="2926.97" y="460" width="264.87" height="42" fill="#ECECFF" stroke="#9370DB"/>
+    <text fill="#333333" text-anchor="middle"><tspan x="3059.4" y="485.9">Evaluation via Standardized Rubrics</tspan></text>
+    <rect x="2973.28" y="552" width="172.24" height="42" fill="#ECECFF" stroke="#9370DB"/>
+    <text fill="#333333" text-anchor="middle"><tspan x="3059.4" y="577.9">Fast Hiring Decisions</tspan></text>
+    <rect x="2916.86" y="644" width="285.08" height="42" fill="#ECECFF" stroke="#9370DB"/>
+    <text fill="#333333" text-anchor="middle"><tspan x="3059.4" y="669.9">Rigorous Financial Background Checks</tspan></text>
+    <rect x="2765.67" y="736" width="144.26" height="42" fill="#ECECFF" stroke="#9370DB"/>
+    <text fill="#333333" text-anchor="middle"><tspan x="2837.8" y="761.9">Credit Screening</tspan></text>
+    <rect x="2959.93" y="736" width="182.34" height="42" fill="#ECECFF" stroke="#9370DB"/>
+    <text fill="#333333" text-anchor="middle"><tspan x="3051.1" y="761.9">Criminal History Check</tspan></text>
+    <rect x="3192.27" y="736" width="194.07" height="42" fill="#ECECFF" stroke="#9370DB"/>
+    <text fill="#333333" text-anchor="middle"><tspan x="3289.3" y="761.9">AML Sanction Screening</tspan></text>
+    <rect x="2721.71" y="828" width="232.19" height="42" fill="#ECECFF" stroke="#9370DB"/>
+    <text fill="#333333" text-anchor="middle"><tspan x="2837.8" y="853.9">Automated Digital Offer Letters</tspan></text>
+    <rect x="2734.93" y="920" width="205.75" height="42" fill="#ECECFF" stroke="#9370DB"/>
+    <text fill="#333333" text-anchor="middle"><tspan x="2837.8" y="945.9">Batch Onboarding Cohorts</tspan></text>
+    <rect x="2704.98" y="1012" width="265.65" height="42" fill="#ECECFF" stroke="#9370DB"/>
+    <text fill="#333333" text-anchor="middle"><tspan x="2837.8" y="1037.9">Streamlined Training &amp; Engagement</tspan></text>
+    <rect x="2762.95" y="1104" width="149.7" height="42" fill="#ECECFF" stroke="#9370DB"/>
+    <text fill="#333333" text-anchor="middle"><tspan x="2837.8" y="1129.9">Official Start Date</tspan></text>
+    <rect x="3689.03" y="0" width="57.12" height="42" fill="#ECECFF" stroke="#9370DB"/>
+    <text fill="#333333" text-anchor="middle"><tspan x="3717.59" y="25.9">P1</tspan></text>
+    <rect x="3207.61" y="92" width="57.12" height="42" fill="#ECECFF" stroke="#9370DB"/>
+    <text fill="#333333" text-anchor="middle"><tspan x="3236.17" y="117.9">P2</tspan></text>
+  </g>
+</svg>
