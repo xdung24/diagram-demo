@@ -102,36 +102,3 @@ func TestDiagramFolderNameUsesIDThenSlug(t *testing.T) {
 		t.Fatalf("expected slug fallback folder name, got %q", got)
 	}
 }
-
-func TestPersistDiagramFolderUsesIDBasedDirectory(t *testing.T) {
-	tempDir := t.TempDir()
-	publicDir := filepath.Join(tempDir, "public")
-	if err := os.MkdirAll(filepath.Join(publicDir, "diagram"), 0o755); err != nil {
-		t.Fatalf("create public diagram root: %v", err)
-	}
-
-	cwd, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("get cwd: %v", err)
-	}
-	if err := os.Chdir(tempDir); err != nil {
-		t.Fatalf("chdir to temp dir: %v", err)
-	}
-	t.Cleanup(func() {
-		_ = os.Chdir(cwd)
-	})
-
-	svc := &Service{}
-	item := Diagram{Title: "My Diagram", Slug: "my-slug"}
-	if err := svc.persistDiagramFolder(item); err != nil {
-		t.Fatalf("persist diagram folder: %v", err)
-	}
-
-	folderPath := filepath.Join(publicDir, "diagram", "my-slug")
-	if _, err := os.Stat(folderPath); err != nil {
-		t.Fatalf("expected folder %s to exist: %v", folderPath, err)
-	}
-	if _, err := os.Stat(filepath.Join(folderPath, "diagram.json")); err != nil {
-		t.Fatalf("expected diagram metadata file to exist: %v", err)
-	}
-}

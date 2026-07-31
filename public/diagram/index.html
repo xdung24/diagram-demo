@@ -437,8 +437,6 @@
       }
       return data;
     }
-
-    // Load diagram
     async function loadDiagram() {
       const pathParts = window.location.pathname.split('/').filter(Boolean);
       const slug = pathParts.length > 1 ? pathParts[1] : '';
@@ -476,8 +474,6 @@
       }
     }
     loadDiagram();
-
-    // Save button
     async function saveDiagram() {
       const pathParts = window.location.pathname.split('/').filter(Boolean);
       const slug = pathParts.length > 1 ? pathParts[1] : '';
@@ -501,8 +497,6 @@
       }
     };
     document.getElementById('saveBtn').addEventListener('click', saveDiagram);
-
-    // Generate button
     async function generateDiagram() {
       const pathParts = window.location.pathname.split('/').filter(Boolean);
       const slug = pathParts.length > 1 ? pathParts[1] : '';
@@ -532,8 +526,6 @@
       saveDiagram();
     };
     document.getElementById('generateBtn').addEventListener('click', generateDiagram);
-    
-    // Render button
     async function renderDiagram() {
       const pathParts = window.location.pathname.split('/').filter(Boolean);
       const slug = pathParts.length > 1 ? pathParts[1] : '';
@@ -569,8 +561,6 @@
       }
     };
     document.getElementById('renderBtn').addEventListener('click', renderDiagram);
-
-    // Delete button
     async function deleteDiagram() {
       const pathParts = window.location.pathname.split('/').filter(Boolean);
       const slug = pathParts.length > 1 ? pathParts[1] : '';
@@ -584,8 +574,6 @@
       }
     };
     document.getElementById('deleteBtn').addEventListener('click', deleteDiagram);
-
-    // Debugger
     function appendLog(text) {
       const logsEl = document.getElementById('logs');
       const row = document.createElement('div');

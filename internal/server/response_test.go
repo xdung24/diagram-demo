@@ -37,12 +37,12 @@ func TestWriteStatusPage(t *testing.T) {
 	}
 }
 
-func TestCustomResponseWriterImplementsFlusher(t *testing.T) {
+func TestLogWriterImplementsFlusher(t *testing.T) {
 	rr := httptest.NewRecorder()
-	rw := &CustomResponseWriter{ResponseWriter: rr, status: http.StatusOK}
+	rw := &logWriter{ResponseWriter: rr, status: http.StatusOK}
 
 	if _, ok := any(rw).(http.Flusher); !ok {
-		t.Fatal("CustomResponseWriter should implement http.Flusher")
+		t.Fatal("logWriter should implement http.Flusher")
 	}
 
 	rw.Flush()

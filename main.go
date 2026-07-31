@@ -82,10 +82,10 @@ func main() {
 	}()
 
 	// Start self-health-checker
-	healthCheckUrl := strings.ToLower(os.Getenv("HEALTH_CHECK_URL"))
-	if healthCheckUrl != "" {
-		log.Printf("starting self-health-checker for %s", healthCheckUrl)
-		go server.StartSelfHealthCheck(healthCheckUrl)
+	siteUrl := strings.ToLower(os.Getenv("SITE_URL"))
+	if siteUrl != "" {
+		log.Printf("starting self-health-checker for %s", siteUrl+"/health")
+		go server.StartSelfHealthCheck(siteUrl + "/health")
 	}
 
 	// Start the HTTP server

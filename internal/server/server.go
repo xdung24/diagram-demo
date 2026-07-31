@@ -86,26 +86,6 @@ func CreateHttpServer(publicFS fs.FS, svc *diagram.Service) http.Handler {
 		handler.ServeHTTP(w, r)
 	})
 
-	// List tools
-	mux.HandleFunc("/api/tools", func(w http.ResponseWriter, r *http.Request) {
-		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.Method != http.MethodGet {
-				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-				return
-			}
-			ctx, cancel := NewContext()
-			defer cancel()
-			tools, err := svc.ListTools(ctx)
-			if err != nil {
-				log.Printf("failed to list tools: %v", err)
-				helper.WriteJSON(w, http.StatusInternalServerError, map[string]any{"error": helper.SanitizeError(err)})
-				return
-			}
-			helper.WriteJSON(w, http.StatusOK, map[string]any{"tools": tools})
-		})
-		handler.ServeHTTP(w, r)
-	})
-
 	// Generate diagram
 	mux.HandleFunc("/api/generate", func(w http.ResponseWriter, r *http.Request) {
 		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -243,7 +223,7 @@ func CreateHttpServer(publicFS fs.FS, svc *diagram.Service) http.Handler {
 		mux.Handle("/", http.FileServer(http.Dir(".")))
 	}
 
-	return loggingMiddleware(statusPageMiddleware(mux, publicFS))
+	return LogWriter(ResponseWriter(mux, publicFS))
 }
 
 func serveDiagramRoute(w http.ResponseWriter, r *http.Request) {

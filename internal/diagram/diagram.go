@@ -185,8 +185,6 @@ func (s *Service) UpdateDiagram(slug string, input Diagram) (Diagram, error) {
 
 	current.Description = strings.TrimSpace(input.Description)
 	current.Code = strings.TrimSpace(input.Code)
-	current.MmdPath = input.MmdPath
-	current.SvgPath = input.SvgPath
 	current.UpdatedAt = time.Now().UTC()
 
 	if err := s.persistDiagramFolder(current); err != nil {
