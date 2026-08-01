@@ -41,9 +41,16 @@ type McpClient struct {
 }
 
 // NewMcpClient starts the MCP server binary as a stdio child process.
-func NewMcpClient(ctx context.Context, binary string, args ...string) (*McpClient, error) {
+// NewMcpClient starts the MCP server binary as a stdio child process.
+// If stderrWriter is non-nil, it will be used as the child's stderr writer
+// so the caller can capture and stream MCP server stderr output.
+func NewMcpClient(ctx context.Context, binary string, stderr io.Writer, args ...string) (*McpClient, error) {
 	cmd := exec.CommandContext(ctx, binary, args...)
-	cmd.Stderr = &stderrWriter{}
+	if stderr != nil {
+		cmd.Stderr = stderr
+	} else {
+		cmd.Stderr = &stderrWriter{}
+	}
 
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
@@ -58,7 +65,7 @@ func NewMcpClient(ctx context.Context, binary string, args ...string) (*McpClien
 		cmd:             cmd,
 		stdin:           stdin,
 		stdout:          bufio.NewReader(stdout),
-		stderr:          &stderrWriter{},
+		stderr:          stderr,
 		instructionsURI: defaultGlobalInstructions,
 	}
 	if err := cmd.Start(); err != nil {

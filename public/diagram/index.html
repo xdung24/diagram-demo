@@ -233,7 +233,7 @@
         <h2 class="text-lg font-semibold">Debugger</h2>
         <button id="toggleLogs" class="text-sm text-slate-400">Collapse</button>
       </div>
-      <div id="logs" class="rounded-lg border border-slate-800 bg-slate-950 p-3 text-xs font-mono max-h-64 overflow-hidden"></div>
+      <div id="logs" class="rounded-lg border border-slate-800 bg-slate-950 p-3 text-xs font-mono max-h-64 overflow-y-auto"></div>
     </section>
   </div>
   <script>
@@ -588,6 +588,12 @@
     eventSource.onmessage = (ev) => {
       appendLog(ev.data);
     };
+    const toggleLogsBtn = document.getElementById('toggleLogs');
+    const logsEl = document.getElementById('logs');
+    toggleLogsBtn.addEventListener('click', () => {
+      const isCollapsed = logsEl.classList.toggle('hidden');
+      toggleLogsBtn.textContent = isCollapsed ? 'Expand' : 'Collapse';
+    });
   </script>
 	</body>
 </html>

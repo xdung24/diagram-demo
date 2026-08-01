@@ -81,6 +81,14 @@ func (w *responseWriter) Push(target string, opts *http.PushOptions) error {
 
 func ResponseWriter(next http.Handler, publicFS fs.FS) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Streaming endpoints (SSE) must write directly to the client;
+		// buffering here would hold the response until the handler returns,
+		// which never happens for a long-lived stream.
+		if r.URL.Path == "/api/logs/stream" {
+			next.ServeHTTP(w, r)
+			return
+		}
+
 		rw := &responseWriter{ResponseWriter: w, status: http.StatusOK}
 		next.ServeHTTP(rw, r)
 

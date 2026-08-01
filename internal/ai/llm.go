@@ -52,6 +52,9 @@ func githubModelsReply(cfg AIClient, history []ChatMessage, userMessage string) 
 	msgs = append(msgs, openAIMessage{Role: "user", Content: userMessage})
 
 	body, _ := json.Marshal(openAIRequest{Model: cfg.Model, Messages: msgs})
+	if cfg.LogFunc != nil {
+		cfg.LogFunc("LLM -> GitHubModels: request prepared")
+	}
 	req, _ := http.NewRequest("POST", "https://models.inference.ai.azure.com/chat/completions", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+cfg.APIKey)
@@ -65,15 +68,25 @@ func githubModelsReply(cfg AIClient, history []ChatMessage, userMessage string) 
 
 	var result openAIResponse
 	if err := json.Unmarshal(raw, &result); err != nil {
+		if cfg.LogFunc != nil {
+			cfg.LogFunc("LLM -> GitHubModels: decode error: " + err.Error())
+		}
 		return "", err
 	}
 	if result.Error != nil {
+		if cfg.LogFunc != nil {
+			cfg.LogFunc("LLM -> GitHubModels: api error: " + result.Error.Message)
+		}
 		return "", fmt.Errorf("GitHub Models: %s", result.Error.Message)
 	}
 	if len(result.Choices) == 0 {
 		return "", fmt.Errorf("GitHub Models returned no choices")
 	}
-	return strings.TrimSpace(result.Choices[0].Message.Content), nil
+	reply := strings.TrimSpace(result.Choices[0].Message.Content)
+	if cfg.LogFunc != nil {
+		cfg.LogFunc("LLM <- GitHubModels: reply: " + reply)
+	}
+	return reply, nil
 }
 
 // -------------------------------------------------------------------
@@ -109,6 +122,9 @@ func openAIReply(cfg AIClient, history []ChatMessage, userMessage string) (strin
 	msgs = append(msgs, openAIMessage{Role: "user", Content: userMessage})
 
 	body, _ := json.Marshal(openAIRequest{Model: cfg.Model, Messages: msgs})
+	if cfg.LogFunc != nil {
+		cfg.LogFunc("LLM -> OpenAI: request prepared")
+	}
 	req, _ := http.NewRequest("POST", "https://api.openai.com/v1/chat/completions", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+cfg.APIKey)
@@ -123,6 +139,9 @@ func openAIReply(cfg AIClient, history []ChatMessage, userMessage string) (strin
 
 	var result openAIResponse
 	if err := json.Unmarshal(raw, &result); err != nil {
+		if cfg.LogFunc != nil {
+			cfg.LogFunc("LLM -> OpenAI: decode error: " + err.Error())
+		}
 		return "", err
 	}
 
@@ -134,7 +153,11 @@ func openAIReply(cfg AIClient, history []ChatMessage, userMessage string) (strin
 		return "", fmt.Errorf("OpenAI returned no choices")
 	}
 
-	return strings.TrimSpace(result.Choices[0].Message.Content), nil
+	reply := strings.TrimSpace(result.Choices[0].Message.Content)
+	if cfg.LogFunc != nil {
+		cfg.LogFunc("LLM <- OpenAI: reply: " + reply)
+	}
+	return reply, nil
 }
 
 // -------------------------------------------------------------------
@@ -184,6 +207,9 @@ func geminiReply(cfg AIClient, history []ChatMessage, userMessage string) (strin
 	}
 
 	body, _ := json.Marshal(reqBody)
+	if cfg.LogFunc != nil {
+		cfg.LogFunc("LLM -> Gemini: request prepared")
+	}
 	url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s", cfg.Model, cfg.APIKey)
 	req, _ := http.NewRequest("POST", url, bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
@@ -198,6 +224,9 @@ func geminiReply(cfg AIClient, history []ChatMessage, userMessage string) (strin
 
 	var result geminiResponse
 	if err := json.Unmarshal(raw, &result); err != nil {
+		if cfg.LogFunc != nil {
+			cfg.LogFunc("LLM -> Gemini: decode error: " + err.Error())
+		}
 		return "", err
 	}
 
@@ -209,5 +238,9 @@ func geminiReply(cfg AIClient, history []ChatMessage, userMessage string) (strin
 		return "", fmt.Errorf("Gemini returned empty response")
 	}
 
-	return strings.TrimSpace(result.Candidates[0].Content.Parts[0].Text), nil
+	reply := strings.TrimSpace(result.Candidates[0].Content.Parts[0].Text)
+	if cfg.LogFunc != nil {
+		cfg.LogFunc("LLM <- Gemini: reply: " + reply)
+	}
+	return reply, nil
 }

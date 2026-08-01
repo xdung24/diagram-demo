@@ -1,9 +1,11 @@
 package diagram
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -40,18 +42,41 @@ type Service struct {
 
 // New creates a service and starts the MCP child process.
 func NewDiagramService(ctx context.Context, binary string, args ...string) (*Service, error) {
-	mcpclient, err := mcp.NewMcpClient(ctx, binary, args...)
+	// create log stream early so we can pipe MCP stderr and AI logs into it
+	logStream := NewLogStream()
+
+	// create a pipe to capture MCP child stderr and forward to the log stream
+	pr, pw := io.Pipe()
+
+	// start the MCP client with the pipe writer as its stderr
+	mcpclient, err := mcp.NewMcpClient(ctx, binary, pw, args...)
 	if err != nil {
 		return nil, err
 	}
 
 	svc := &Service{
 		mcpclient: mcpclient,
-		llmclient: ai.NewClient(),
-		logStream: NewLogStream(),
+		llmclient: nil, // set below after we have the log stream
+		logStream: logStream,
 		binary:    binary,
 		diagrams:  make(map[string]Diagram),
 	}
+
+	// goroutine: read MCP stderr lines and publish to service log stream
+	go func() {
+		scanner := bufio.NewScanner(pr)
+		for scanner.Scan() {
+			logStream.Publish(scanner.Text())
+		}
+		if err := scanner.Err(); err != nil {
+			log.Printf("error reading mcp stderr: %v", err)
+		}
+	}()
+
+	// create AI client that publishes LLM requests/responses to the log stream
+	svc.llmclient = ai.NewClientWithLogger(func(msg string) {
+		logStream.Publish(msg)
+	})
 
 	// Load list of diagrams from the public/diagram folder if it exists
 	log.Printf("loading diagrams from public/diagram folder")
@@ -275,7 +300,16 @@ func (s *Service) renderMermaidToSVG(ctx context.Context, code string, params ma
 	}
 
 	cmd := exec.CommandContext(ctx, s.binary, "render", "-i", mmdPath, "-f", "svg", "-o", svgPath)
-	if out, err := cmd.CombinedOutput(); err != nil {
+	out, err := cmd.CombinedOutput()
+	// publish render output to the log stream for debugging/visibility
+	if s.logStream != nil {
+		for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+			if strings.TrimSpace(line) != "" {
+				s.logStream.Publish("mcp render: " + line)
+			}
+		}
+	}
+	if err != nil {
 		return nil, fmt.Errorf("diagram-mcp render failed: %s: %s", err, strings.TrimSpace(string(out)))
 	}
 	now := time.Now().Unix()
