@@ -27,6 +27,7 @@ type Diagram struct {
 	Code        string    `json:"code"`
 	SvgPath     string    `json:"svgPath"`
 	MmdPath     string    `json:"mmdPath"`
+	JsonPath    string    `json:"jsonPath"`
 	CreatedAt   time.Time `json:"createdAt"`
 	UpdatedAt   time.Time `json:"updatedAt"`
 }
@@ -294,6 +295,7 @@ func (s *Service) renderMermaidToSVG(ctx context.Context, code string, params ma
 		return nil, fmt.Errorf("create svg output dir: %w", err)
 	}
 
+	// Execute the MCP binary to render the Mermaid code to SVG
 	mmdPath := filepath.Join(filepath.Dir(svgPath), strings.TrimSuffix(filepath.Base(svgPath), filepath.Ext(svgPath))+".mmd")
 	if err := os.WriteFile(mmdPath, []byte(code), 0o644); err != nil {
 		return nil, fmt.Errorf("write mmd file: %w", err)
@@ -312,29 +314,55 @@ func (s *Service) renderMermaidToSVG(ctx context.Context, code string, params ma
 	if err != nil {
 		return nil, fmt.Errorf("diagram-mcp render failed: %s: %s", err, strings.TrimSpace(string(out)))
 	}
+
+	// Execute the MCP binary to render the Mermaid code to json
+	jsonPath := filepath.Join(filepath.Dir(svgPath), strings.TrimSuffix(filepath.Base(svgPath), filepath.Ext(svgPath))+".data.json")
+	if err := os.WriteFile(jsonPath, []byte(code), 0o644); err != nil {
+		return nil, fmt.Errorf("write json file: %w", err)
+	}
+	cmd2 := exec.CommandContext(ctx, s.binary, "render", "-i", mmdPath, "-f", "json", "-o", jsonPath)
+	out, err = cmd2.CombinedOutput()
+	// publish render output to the log stream for debugging/visibility
+	if s.logStream != nil {
+		for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+			if strings.TrimSpace(line) != "" {
+				s.logStream.Publish("mcp render: " + line)
+			}
+		}
+	}
+	if err != nil {
+		return nil, fmt.Errorf("diagram-mcp render failed: %s: %s", err, strings.TrimSpace(string(out)))
+	}
+
 	now := time.Now().Unix()
+	mmdURL := filepath.ToSlash(mmdPath)
+	if rel, err := filepath.Rel(publicRoot, mmdPath); err == nil && !strings.HasPrefix(rel, "..") {
+		mmdURL = "/" + filepath.ToSlash(rel) + "?t=" + fmt.Sprint(now)
+	}
 	svgURL := filepath.ToSlash(svgPath)
 	if rel, err := filepath.Rel(publicRoot, svgPath); err == nil && !strings.HasPrefix(rel, "..") {
 		// Add generated timestamp to bypass browser cache
 		svgURL = "/" + filepath.ToSlash(rel) + "?t=" + fmt.Sprint(now)
 	}
-	mmdURL := filepath.ToSlash(mmdPath)
-	if rel, err := filepath.Rel(publicRoot, mmdPath); err == nil && !strings.HasPrefix(rel, "..") {
-		mmdURL = "/" + filepath.ToSlash(rel) + "?t=" + fmt.Sprint(now)
+	jsonDataURL := filepath.ToSlash(jsonPath)
+	if rel, err := filepath.Rel(publicRoot, jsonPath); err == nil && !strings.HasPrefix(rel, "..") {
+		jsonDataURL = "/" + filepath.ToSlash(rel) + "?t=" + fmt.Sprint(now)
 	}
 
-	// Store svgPath and mmdPath to diagram.json for later retrieval
+	// Store svgPath and mmdPath  and jsonPathto diagram.json for later retrieval
 	diagram, ok := s.diagrams[name]
 	if ok {
 		diagram.SvgPath = svgURL
 		diagram.MmdPath = mmdURL
+		diagram.JsonPath = jsonDataURL
 		s.diagrams[name] = diagram
 		s.persistDiagramFolder(diagram)
 	}
 
 	return map[string]any{
-		"svgPath": svgURL,
-		"mmdPath": mmdURL,
+		"svgPath":  svgURL,
+		"mmdPath":  mmdURL,
+		"jsonPath": jsonDataURL,
 	}, nil
 }
 
@@ -365,6 +393,7 @@ func (s *Service) persistDiagramFolder(item Diagram) error {
 		"updatedAt":   item.UpdatedAt.Format(time.RFC3339),
 		"svgPath":     item.SvgPath,
 		"mmdPath":     item.MmdPath,
+		"jsonPath":    item.JsonPath,
 		"description": item.Description,
 		"code":        item.Code,
 	}, "", "  ")

@@ -1,0 +1,1010 @@
+{
+  "nodes": [
+    {
+      "id": "node-0",
+      "type": "root",
+      "position": {
+        "x": 16,
+        "y": 485
+      },
+      "dimensions": {
+        "width": 156.178,
+        "height": 26
+      },
+      "data": {
+        "label": "Effective Presentation",
+        "status": "active"
+      }
+    },
+    {
+      "id": "node-1",
+      "type": "node",
+      "position": {
+        "x": 186,
+        "y": 135
+      },
+      "dimensions": {
+        "width": 92.36600000000001,
+        "height": 26
+      },
+      "data": {
+        "label": "Preparation",
+        "status": "active"
+      }
+    },
+    {
+      "id": "node-2",
+      "type": "node",
+      "position": {
+        "x": 356,
+        "y": 33
+      },
+      "dimensions": {
+        "width": 78.36600000000001,
+        "height": 26
+      },
+      "data": {
+        "label": "Audience",
+        "status": "active"
+      }
+    },
+    {
+      "id": "node-3",
+      "type": "node",
+      "position": {
+        "x": 526,
+        "y": 16
+      },
+      "dimensions": {
+        "width": 111.82600000000001,
+        "height": 26
+      },
+      "data": {
+        "label": "Analyze needs",
+        "status": "active"
+      }
+    },
+    {
+      "id": "node-4",
+      "type": "node",
+      "position": {
+        "x": 526,
+        "y": 50
+      },
+      "dimensions": {
+        "width": 121.93400000000001,
+        "height": 26
+      },
+      "data": {
+        "label": "Knowledge level",
+        "status": "active"
+      }
+    },
+    {
+      "id": "node-5",
+      "type": "node",
+      "position": {
+        "x": 356,
+        "y": 135
+      },
+      "dimensions": {
+        "width": 69.028,
+        "height": 26
+      },
+      "data": {
+        "label": "Content",
+        "status": "active"
+      }
+    },
+    {
+      "id": "node-6",
+      "type": "node",
+      "position": {
+        "x": 526,
+        "y": 84
+      },
+      "dimensions": {
+        "width": 83.79800000000002,
+        "height": 26
+      },
+      "data": {
+        "label": "Clear goal",
+        "status": "active"
+      }
+    },
+    {
+      "id": "node-7",
+      "type": "node",
+      "position": {
+        "x": 526,
+        "y": 118
+      },
+      "dimensions": {
+        "width": 95.488,
+        "height": 26
+      },
+      "data": {
+        "label": "Strong hook",
+        "status": "active"
+      }
+    },
+    {
+      "id": "node-8",
+      "type": "node",
+      "position": {
+        "x": 526,
+        "y": 152
+      },
+      "dimensions": {
+        "width": 103.25800000000001,
+        "height": 26
+      },
+      "data": {
+        "label": "3 main points",
+        "status": "active"
+      }
+    },
+    {
+      "id": "node-9",
+      "type": "node",
+      "position": {
+        "x": 526,
+        "y": 186
+      },
+      "dimensions": {
+        "width": 100.92,
+        "height": 26
+      },
+      "data": {
+        "label": "Call to action",
+        "status": "active"
+      }
+    },
+    {
+      "id": "node-10",
+      "type": "node",
+      "position": {
+        "x": 356,
+        "y": 237
+      },
+      "dimensions": {
+        "width": 70.568,
+        "height": 26
+      },
+      "data": {
+        "label": "Practice",
+        "status": "active"
+      }
+    },
+    {
+      "id": "node-11",
+      "type": "node",
+      "position": {
+        "x": 526,
+        "y": 220
+      },
+      "dimensions": {
+        "width": 121.92000000000004,
+        "height": 26
+      },
+      "data": {
+        "label": "Rehearse timing",
+        "status": "active"
+      }
+    },
+    {
+      "id": "node-12",
+      "type": "node",
+      "position": {
+        "x": 526,
+        "y": 254
+      },
+      "dimensions": {
+        "width": 103.272,
+        "height": 26
+      },
+      "data": {
+        "label": "Get feedback",
+        "status": "active"
+      }
+    },
+    {
+      "id": "node-13",
+      "type": "node",
+      "position": {
+        "x": 186,
+        "y": 364.5
+      },
+      "dimensions": {
+        "width": 89.244,
+        "height": 26
+      },
+      "data": {
+        "label": "Visual Aids",
+        "status": "active"
+      }
+    },
+    {
+      "id": "node-14",
+      "type": "node",
+      "position": {
+        "x": 356,
+        "y": 322
+      },
+      "dimensions": {
+        "width": 98.58200000000001,
+        "height": 26
+      },
+      "data": {
+        "label": "Slide Design",
+        "status": "active"
+      }
+    },
+    {
+      "id": "node-15",
+      "type": "node",
+      "position": {
+        "x": 526,
+        "y": 288
+      },
+      "dimensions": {
+        "width": 94.67599999999999,
+        "height": 26
+      },
+      "data": {
+        "label": "Minimal text",
+        "status": "active"
+      }
+    },
+    {
+      "id": "node-16",
+      "type": "node",
+      "position": {
+        "x": 526,
+        "y": 322
+      },
+      "dimensions": {
+        "width": 139.81200000000004,
+        "height": 26
+      },
+      "data": {
+        "label": "High quality visuals",
+        "status": "active"
+      }
+    },
+    {
+      "id": "node-17",
+      "type": "node",
+      "position": {
+        "x": 526,
+        "y": 356
+      },
+      "dimensions": {
+        "width": 120.38000000000002,
+        "height": 26
+      },
+      "data": {
+        "label": "Consistent fonts",
+        "status": "active"
+      }
+    },
+    {
+      "id": "node-18",
+      "type": "node",
+      "position": {
+        "x": 356,
+        "y": 407
+      },
+      "dimensions": {
+        "width": 58.12200000000001,
+        "height": 26
+      },
+      "data": {
+        "label": "Media",
+        "status": "active"
+      }
+    },
+    {
+      "id": "node-19",
+      "type": "node",
+      "position": {
+        "x": 526,
+        "y": 390
+      },
+      "dimensions": {
+        "width": 97.81200000000001,
+        "height": 26
+      },
+      "data": {
+        "label": "Short videos",
+        "status": "active"
+      }
+    },
+    {
+      "id": "node-20",
+      "type": "node",
+      "position": {
+        "x": 526,
+        "y": 424
+      },
+      "dimensions": {
+        "width": 91.58200000000001,
+        "height": 26
+      },
+      "data": {
+        "label": "Live demos",
+        "status": "active"
+      }
+    },
+    {
+      "id": "node-21",
+      "type": "node",
+      "position": {
+        "x": 186,
+        "y": 594
+      },
+      "dimensions": {
+        "width": 70.554,
+        "height": 26
+      },
+      "data": {
+        "label": "Delivery",
+        "status": "active"
+      }
+    },
+    {
+      "id": "node-22",
+      "type": "node",
+      "position": {
+        "x": 356,
+        "y": 492
+      },
+      "dimensions": {
+        "width": 118.07,
+        "height": 26
+      },
+      "data": {
+        "label": "Body Language",
+        "status": "active"
+      }
+    },
+    {
+      "id": "node-23",
+      "type": "node",
+      "position": {
+        "x": 526,
+        "y": 458
+      },
+      "dimensions": {
+        "width": 93.15000000000002,
+        "height": 26
+      },
+      "data": {
+        "label": "Eye contact",
+        "status": "active"
+      }
+    },
+    {
+      "id": "node-24",
+      "type": "node",
+      "position": {
+        "x": 526,
+        "y": 492
+      },
+      "dimensions": {
+        "width": 104.82600000000002,
+        "height": 26
+      },
+      "data": {
+        "label": "Open posture",
+        "status": "active"
+      }
+    },
+    {
+      "id": "node-25",
+      "type": "node",
+      "position": {
+        "x": 526,
+        "y": 526
+      },
+      "dimensions": {
+        "width": 122.70400000000001,
+        "height": 26
+      },
+      "data": {
+        "label": "Natural gestures",
+        "status": "active"
+      }
+    },
+    {
+      "id": "node-26",
+      "type": "node",
+      "position": {
+        "x": 356,
+        "y": 594
+      },
+      "dimensions": {
+        "width": 104.028,
+        "height": 26
+      },
+      "data": {
+        "label": "Voice Control",
+        "status": "active"
+      }
+    },
+    {
+      "id": "node-27",
+      "type": "node",
+      "position": {
+        "x": 526,
+        "y": 560
+      },
+      "dimensions": {
+        "width": 112.61000000000001,
+        "height": 26
+      },
+      "data": {
+        "label": "Pace and pitch",
+        "status": "active"
+      }
+    },
+    {
+      "id": "node-28",
+      "type": "node",
+      "position": {
+        "x": 526,
+        "y": 594
+      },
+      "dimensions": {
+        "width": 124.272,
+        "height": 26
+      },
+      "data": {
+        "label": "Strategic pauses",
+        "status": "active"
+      }
+    },
+    {
+      "id": "node-29",
+      "type": "node",
+      "position": {
+        "x": 526,
+        "y": 628
+      },
+      "dimensions": {
+        "width": 59.662000000000006,
+        "height": 26
+      },
+      "data": {
+        "label": "Clarity",
+        "status": "active"
+      }
+    },
+    {
+      "id": "node-30",
+      "type": "node",
+      "position": {
+        "x": 356,
+        "y": 696
+      },
+      "dimensions": {
+        "width": 99.38,
+        "height": 26
+      },
+      "data": {
+        "label": "Engagement",
+        "status": "active"
+      }
+    },
+    {
+      "id": "node-31",
+      "type": "node",
+      "position": {
+        "x": 526,
+        "y": 662
+      },
+      "dimensions": {
+        "width": 89.24400000000001,
+        "height": 26
+      },
+      "data": {
+        "label": "Storytelling",
+        "status": "active"
+      }
+    },
+    {
+      "id": "node-32",
+      "type": "node",
+      "position": {
+        "x": 526,
+        "y": 696
+      },
+      "dimensions": {
+        "width": 146.82600000000002,
+        "height": 26
+      },
+      "data": {
+        "label": "Rhetorical questions",
+        "status": "active"
+      }
+    },
+    {
+      "id": "node-33",
+      "type": "node",
+      "position": {
+        "x": 526,
+        "y": 730
+      },
+      "dimensions": {
+        "width": 118.028,
+        "height": 26
+      },
+      "data": {
+        "label": "Polls or quizzes",
+        "status": "active"
+      }
+    },
+    {
+      "id": "node-34",
+      "type": "node",
+      "position": {
+        "x": 186,
+        "y": 835
+      },
+      "dimensions": {
+        "width": 108.70400000000001,
+        "height": 26
+      },
+      "data": {
+        "label": "Handling Q\u0026A",
+        "status": "active"
+      }
+    },
+    {
+      "id": "node-35",
+      "type": "node",
+      "position": {
+        "x": 356,
+        "y": 764
+      },
+      "dimensions": {
+        "width": 113.36600000000001,
+        "height": 26
+      },
+      "data": {
+        "label": "Active listening",
+        "status": "active"
+      }
+    },
+    {
+      "id": "node-36",
+      "type": "node",
+      "position": {
+        "x": 356,
+        "y": 798
+      },
+      "dimensions": {
+        "width": 103.272,
+        "height": 42
+      },
+      "data": {
+        "label": "Pause before answering",
+        "status": "active"
+      }
+    },
+    {
+      "id": "node-37",
+      "type": "node",
+      "position": {
+        "x": 356,
+        "y": 848
+      },
+      "dimensions": {
+        "width": 121.16400000000002,
+        "height": 42
+      },
+      "data": {
+        "label": "Keep responses concise",
+        "status": "active"
+      }
+    },
+    {
+      "id": "node-38",
+      "type": "node",
+      "position": {
+        "x": 356,
+        "y": 898
+      },
+      "dimensions": {
+        "width": 109.50200000000001,
+        "height": 42
+      },
+      "data": {
+        "label": "Manage tough questions",
+        "status": "active"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-1",
+      "source": "node-0",
+      "target": "node-1",
+      "label": "",
+      "style": {
+        "stroke": "#4B5563",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "edge-2",
+      "source": "node-1",
+      "target": "node-2",
+      "label": "",
+      "style": {
+        "stroke": "#4B5563",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "edge-3",
+      "source": "node-2",
+      "target": "node-3",
+      "label": "",
+      "style": {
+        "stroke": "#4B5563",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "edge-4",
+      "source": "node-2",
+      "target": "node-4",
+      "label": "",
+      "style": {
+        "stroke": "#4B5563",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "edge-5",
+      "source": "node-1",
+      "target": "node-5",
+      "label": "",
+      "style": {
+        "stroke": "#4B5563",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "edge-6",
+      "source": "node-5",
+      "target": "node-6",
+      "label": "",
+      "style": {
+        "stroke": "#4B5563",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "edge-7",
+      "source": "node-5",
+      "target": "node-7",
+      "label": "",
+      "style": {
+        "stroke": "#4B5563",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "edge-8",
+      "source": "node-5",
+      "target": "node-8",
+      "label": "",
+      "style": {
+        "stroke": "#4B5563",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "edge-9",
+      "source": "node-5",
+      "target": "node-9",
+      "label": "",
+      "style": {
+        "stroke": "#4B5563",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "edge-10",
+      "source": "node-1",
+      "target": "node-10",
+      "label": "",
+      "style": {
+        "stroke": "#4B5563",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "edge-11",
+      "source": "node-10",
+      "target": "node-11",
+      "label": "",
+      "style": {
+        "stroke": "#4B5563",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "edge-12",
+      "source": "node-10",
+      "target": "node-12",
+      "label": "",
+      "style": {
+        "stroke": "#4B5563",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "edge-13",
+      "source": "node-0",
+      "target": "node-13",
+      "label": "",
+      "style": {
+        "stroke": "#4B5563",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "edge-14",
+      "source": "node-13",
+      "target": "node-14",
+      "label": "",
+      "style": {
+        "stroke": "#4B5563",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "edge-15",
+      "source": "node-14",
+      "target": "node-15",
+      "label": "",
+      "style": {
+        "stroke": "#4B5563",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "edge-16",
+      "source": "node-14",
+      "target": "node-16",
+      "label": "",
+      "style": {
+        "stroke": "#4B5563",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "edge-17",
+      "source": "node-14",
+      "target": "node-17",
+      "label": "",
+      "style": {
+        "stroke": "#4B5563",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "edge-18",
+      "source": "node-13",
+      "target": "node-18",
+      "label": "",
+      "style": {
+        "stroke": "#4B5563",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "edge-19",
+      "source": "node-18",
+      "target": "node-19",
+      "label": "",
+      "style": {
+        "stroke": "#4B5563",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "edge-20",
+      "source": "node-18",
+      "target": "node-20",
+      "label": "",
+      "style": {
+        "stroke": "#4B5563",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "edge-21",
+      "source": "node-0",
+      "target": "node-21",
+      "label": "",
+      "style": {
+        "stroke": "#4B5563",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "edge-22",
+      "source": "node-21",
+      "target": "node-22",
+      "label": "",
+      "style": {
+        "stroke": "#4B5563",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "edge-23",
+      "source": "node-22",
+      "target": "node-23",
+      "label": "",
+      "style": {
+        "stroke": "#4B5563",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "edge-24",
+      "source": "node-22",
+      "target": "node-24",
+      "label": "",
+      "style": {
+        "stroke": "#4B5563",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "edge-25",
+      "source": "node-22",
+      "target": "node-25",
+      "label": "",
+      "style": {
+        "stroke": "#4B5563",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "edge-26",
+      "source": "node-21",
+      "target": "node-26",
+      "label": "",
+      "style": {
+        "stroke": "#4B5563",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "edge-27",
+      "source": "node-26",
+      "target": "node-27",
+      "label": "",
+      "style": {
+        "stroke": "#4B5563",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "edge-28",
+      "source": "node-26",
+      "target": "node-28",
+      "label": "",
+      "style": {
+        "stroke": "#4B5563",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "edge-29",
+      "source": "node-26",
+      "target": "node-29",
+      "label": "",
+      "style": {
+        "stroke": "#4B5563",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "edge-30",
+      "source": "node-21",
+      "target": "node-30",
+      "label": "",
+      "style": {
+        "stroke": "#4B5563",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "edge-31",
+      "source": "node-30",
+      "target": "node-31",
+      "label": "",
+      "style": {
+        "stroke": "#4B5563",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "edge-32",
+      "source": "node-30",
+      "target": "node-32",
+      "label": "",
+      "style": {
+        "stroke": "#4B5563",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "edge-33",
+      "source": "node-30",
+      "target": "node-33",
+      "label": "",
+      "style": {
+        "stroke": "#4B5563",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "edge-34",
+      "source": "node-0",
+      "target": "node-34",
+      "label": "",
+      "style": {
+        "stroke": "#4B5563",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "edge-35",
+      "source": "node-34",
+      "target": "node-35",
+      "label": "",
+      "style": {
+        "stroke": "#4B5563",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "edge-36",
+      "source": "node-34",
+      "target": "node-36",
+      "label": "",
+      "style": {
+        "stroke": "#4B5563",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "edge-37",
+      "source": "node-34",
+      "target": "node-37",
+      "label": "",
+      "style": {
+        "stroke": "#4B5563",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "edge-38",
+      "source": "node-34",
+      "target": "node-38",
+      "label": "",
+      "style": {
+        "stroke": "#4B5563",
+        "strokeWidth": 2
+      }
+    }
+  ]
+}

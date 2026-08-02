@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>D3.js Interactive Diagram</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <style>
+    :root {
+      color-scheme: dark;
+    }
+    html, body {
+      margin: 0;
+      height: 100%;
+      background: #0f172a;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      overflow: hidden;
+    }
+    #stage {
+      position: fixed;
+      inset: 0;
+    }
+    svg#diagram {
+      width: 100%;
+      height: 100%;
+      display: block;
+      background: #0f172a;
+    }
+    #fallback-svg-wrap {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: #0f172a;
+    }
+    #fallback-svg-wrap img {
+      max-width: 96%;
+      max-height: 96%;
+    }
+    #message {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      color: #94a3b8;
+      font-size: 14px;
+    }
+    .node rect {
+      stroke-width: 1.5px;
+      transition: opacity 0.2s ease, filter 0.2s ease;
+    }
+    .node text {
+      fill: #e2e8f0;
+      font-size: 12px;
+      font-weight: 600;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+    .node {
+      cursor: grab;
+    }
+    .node.dragging {
+      cursor: grabbing;
+    }
+    .edge-path {
+      fill: none;
+      stroke-width: 2px;
+      transition: opacity 0.2s ease, stroke-width 0.2s ease;
+      cursor: pointer;
+    }
+    .edge-hit {
+      fill: none;
+      stroke: transparent;
+      stroke-width: 14px;
+      cursor: pointer;
+    }
+    .edge-label-bg {
+      fill: #0f172a;
+      opacity: 0.85;
+      transition: opacity 0.2s ease;
+    }
+    .edge-label {
+      fill: #94a3b8;
+      font-size: 10px;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+    .faded {
+      opacity: 0.15 !important;
+    }
+    .active {
+      opacity: 1 !important;
+    }
+  </style>
+</head>
+<body>
+  <div id="stage">
+    <svg id="diagram"></svg>
+  </div>
+  <div id="fallback-svg-wrap"><img id="fallback-svg-img" alt="Diagram" /></div>
+  <div id="message"></div>
+
+  <script>
+    // Embedded copy of data.json, used when fetch() is unavailable (e.g. opening this
+    // file directly via file:// where XHR/fetch to local files is blocked by the browser).
+    const EMBEDDED_DATA = {
+      "nodes": [
+        { "id": "node-1", "type": "client", "position": { "x": 50, "y": 260 }, "dimensions": { "width": 140, "height": 60 }, "data": { "label": "Web Client", "status": "healthy" } },
+        { "id": "node-2", "type": "client", "position": { "x": 50, "y": 380 }, "dimensions": { "width": 140, "height": 60 }, "data": { "label": "Mobile Client", "status": "healthy" } },
+        { "id": "node-3", "type": "gateway", "position": { "x": 260, "y": 320 }, "dimensions": { "width": 160, "height": 60 }, "data": { "label": "API Gateway", "status": "healthy" } },
+        { "id": "node-4", "type": "service", "position": { "x": 490, "y": 180 }, "dimensions": { "width": 160, "height": 60 }, "data": { "label": "Auth Service", "status": "healthy" } },
+        { "id": "node-5", "type": "service", "position": { "x": 490, "y": 320 }, "dimensions": { "width": 160, "height": 60 }, "data": { "label": "Order Service", "status": "warning" } },
+        { "id": "node-6", "type": "service", "position": { "x": 490, "y": 460 }, "dimensions": { "width": 160, "height": 60 }, "data": { "label": "Inventory Service", "status": "healthy" } },
+        { "id": "node-7", "type": "queue", "position": { "x": 720, "y": 390 }, "dimensions": { "width": 150, "height": 60 }, "data": { "label": "Message Queue", "status": "healthy" } },
+        { "id": "node-8", "type": "cache", "position": { "x": 720, "y": 180 }, "dimensions": { "width": 150, "height": 60 }, "data": { "label": "Redis Cache", "status": "healthy" } },
+        { "id": "node-9", "type": "database", "position": { "x": 950, "y": 260 }, "dimensions": { "width": 160, "height": 60 }, "data": { "label": "PostgreSQL DB", "status": "healthy" } },
+        { "id": "node-10", "type": "database", "position": { "x": 950, "y": 460 }, "dimensions": { "width": 160, "height": 60 }, "data": { "label": "Inventory DB", "status": "critical" } },
+        { "id": "node-11", "type": "worker", "position": { "x": 950, "y": 390 }, "dimensions": { "width": 160, "height": 60 }, "data": { "label": "Notification Worker", "status": "healthy" } }
+      ],
+      "edges": [
+        { "id": "edge-1", "source": "node-1", "target": "node-3", "label": "HTTPS Request", "style": { "stroke": "#4B5563", "strokeWidth": 2 } },
+        { "id": "edge-2", "source": "node-2", "target": "node-3", "label": "HTTPS Request", "style": { "stroke": "#4B5563", "strokeWidth": 2 } },
+        { "id": "edge-3", "source": "node-3", "target": "node-4", "label": "Authenticate", "style": { "stroke": "#2563EB", "strokeWidth": 2 } },
+        { "id": "edge-4", "source": "node-3", "target": "node-5", "label": "Route Order", "style": { "stroke": "#2563EB", "strokeWidth": 2 } },
+        { "id": "edge-5", "source": "node-3", "target": "node-6", "label": "Check Stock", "style": { "stroke": "#2563EB", "strokeWidth": 2 } },
+        { "id": "edge-6", "source": "node-4", "target": "node-8", "label": "Session Lookup", "style": { "stroke": "#7C3AED", "strokeWidth": 1.5 } },
+        { "id": "edge-7", "source": "node-5", "target": "node-9", "label": "Read/Write Orders", "style": { "stroke": "#059669", "strokeWidth": 2 } },
+        { "id": "edge-8", "source": "node-5", "target": "node-7", "label": "Publish Event", "style": { "stroke": "#D97706", "strokeWidth": 1.5 } },
+        { "id": "edge-9", "source": "node-6", "target": "node-10", "label": "Read/Write Stock", "style": { "stroke": "#059669", "strokeWidth": 2 } },
+        { "id": "edge-10", "source": "node-7", "target": "node-11", "label": "Consume Event", "style": { "stroke": "#D97706", "strokeWidth": 1.5 } },
+        { "id": "edge-11", "source": "node-6", "target": "node-7", "label": "Publish Stock Update", "style": { "stroke": "#D97706", "strokeWidth": 1.5 } },
+        { "id": "edge-12", "source": "node-11", "target": "node-9", "label": "Log Notification", "style": { "stroke": "#DC2626", "strokeWidth": 1.5 } }
+      ]
+    };
+
+    const TYPE_COLORS = {
+      client: "#334155",
+      gateway: "#1d4ed8",
+      service: "#0f766e",
+      queue: "#b45309",
+      cache: "#6d28d9",
+      database: "#065f46",
+      worker: "#9f1239",
+      default: "#334155",
+    };
+
+    const STATUS_STROKE = {
+      healthy: "#22c55e",
+      warning: "#f59e0b",
+      critical: "#ef4444",
+      default: "#64748b",
+    };
+
+    function showMessage(text) {
+      const el = document.getElementById("message");
+      el.textContent = text;
+      el.style.display = "flex";
+    }
+
+    function showSvgFallback(svgPath) {
+      const wrap = document.getElementById("fallback-svg-wrap");
+      const img = document.getElementById("fallback-svg-img");
+      img.src = svgPath;
+      img.onerror = () => showMessage("Unable to load diagram (no data.json or svg found).");
+      document.getElementById("stage").style.display = "none";
+      wrap.style.display = "flex";
+    }
+
+    async function fetchJson(path) {
+      try {
+        const res = await fetch(path, { cache: "no-store" });
+        if (!res.ok) return null;
+        return await res.json();
+      } catch (err) {
+        return null;
+      }
+    }
+
+    function renderDiagram(data) {
+      const nodes = data.nodes;
+      const edges = data.edges;
+      const nodeById = new Map(nodes.map((n) => [n.id, n]));
+      const edgeById = new Map(edges.map((e) => [e.id, e]));
+
+      // adjacency: node -> { nodes: Set, edges: Set }; edge -> { nodes: Set }
+      const nodeNeighbors = new Map(nodes.map((n) => [n.id, { nodes: new Set(), edges: new Set() }]));
+      const edgeNeighbors = new Map();
+      edges.forEach((e) => {
+        edgeNeighbors.set(e.id, { nodes: new Set([e.source, e.target]) });
+        const s = nodeNeighbors.get(e.source);
+        const t = nodeNeighbors.get(e.target);
+        if (s) { s.nodes.add(e.target); s.edges.add(e.id); }
+        if (t) { t.nodes.add(e.source); t.edges.add(e.id); }
+      });
+
+      const width = Math.max(...nodes.map((n) => n.position.x + n.dimensions.width)) + 80;
+      const height = Math.max(...nodes.map((n) => n.position.y + n.dimensions.height)) + 80;
+
+      const svg = d3.select("#diagram").attr("viewBox", `0 0 ${width} ${height}`);
+      svg.selectAll("*").remove();
+
+      const defs = svg.append("defs");
+      defs.append("marker")
+        .attr("id", "arrowhead")
+        .attr("viewBox", "0 -5 10 10")
+        .attr("refX", 9)
+        .attr("refY", 0)
+        .attr("markerWidth", 7)
+        .attr("markerHeight", 7)
+        .attr("orient", "auto")
+        .append("path")
+        .attr("d", "M0,-5L10,0L0,5")
+        .attr("fill", "#64748b");
+
+      const root = svg.append("g").attr("class", "viewport");
+
+      svg.call(
+        d3.zoom()
+          .scaleExtent([0.4, 2.5])
+          .on("zoom", (event) => root.attr("transform", event.transform))
+      );
+
+      function center(node) {
+        return {
+          x: node.position.x + node.dimensions.width / 2,
+          y: node.position.y + node.dimensions.height / 2,
+        };
+      }
+
+      function edgePath(e) {
+        const s = nodeById.get(e.source);
+        const t = nodeById.get(e.target);
+        if (!s || !t) return "";
+        const sc = center(s);
+        const tc = center(t);
+        const mx = (sc.x + tc.x) / 2;
+        const my = (sc.y + tc.y) / 2;
+        // slight curve via a quadratic control point offset perpendicular to the line
+        const dx = tc.x - sc.x, dy = tc.y - sc.y;
+        const offset = 30;
+        const cx = mx - (dy / Math.hypot(dx, dy || 1)) * (offset / 4);
+        const cy = my + (dx / Math.hypot(dx, dy || 1)) * (offset / 4);
+        return `M${sc.x},${sc.y} Q${cx},${cy} ${tc.x},${tc.y}`;
+      }
+
+      // recompute an edge's path + label position after its endpoints move
+      function updateEdgeGeometry(e) {
+        const g = edgeGroup.select(`#edge-${e.id}`);
+        const d = edgePath(e);
+        g.select("path.edge-path").attr("d", d);
+        g.select("path.edge-hit").attr("d", d);
+        const s = nodeById.get(e.source);
+        const t = nodeById.get(e.target);
+        if (!s || !t) return;
+        const sc = center(s), tc = center(t);
+        const mx = (sc.x + tc.x) / 2, my = (sc.y + tc.y) / 2;
+        const text = g.select("text.edge-label");
+        if (text.empty()) return;
+        text.attr("x", mx).attr("y", my);
+        const bbox = text.node().getBBox();
+        g.select("rect.edge-label-bg")
+          .attr("x", bbox.x - 4)
+          .attr("y", bbox.y - 2)
+          .attr("width", bbox.width + 8)
+          .attr("height", bbox.height + 4);
+      }
+
+      // ---- edges ----
+      const edgeGroup = root.append("g").attr("class", "edges");
+      const edgeSel = edgeGroup.selectAll("g.edge")
+        .data(edges, (d) => d.id)
+        .join("g")
+        .attr("class", "edge")
+        .attr("id", (d) => `edge-${d.id}`);
+
+      edgeSel.append("path")
+        .attr("class", "edge-path")
+        .attr("d", edgePath)
+        .attr("stroke", (d) => (d.style && d.style.stroke) || "#64748b")
+        .attr("stroke-width", (d) => (d.style && d.style.strokeWidth) || 2)
+        .attr("marker-end", "url(#arrowhead)");
+
+      // wider invisible path to make hovering easier
+      edgeSel.append("path")
+        .attr("class", "edge-hit")
+        .attr("d", edgePath);
+
+      edgeSel.each(function (d) {
+        const s = nodeById.get(d.source);
+        const t = nodeById.get(d.target);
+        if (!s || !t || !d.label) return;
+        const sc = center(s);
+        const tc = center(t);
+        const mx = (sc.x + tc.x) / 2;
+        const my = (sc.y + tc.y) / 2;
+        const g = d3.select(this);
+        const text = g.append("text")
+          .attr("class", "edge-label")
+          .attr("x", mx)
+          .attr("y", my)
+          .attr("text-anchor", "middle")
+          .text(d.label);
+        const bbox = text.node().getBBox();
+        g.insert("rect", "text.edge-label")
+          .attr("class", "edge-label-bg")
+          .attr("x", bbox.x - 4)
+          .attr("y", bbox.y - 2)
+          .attr("width", bbox.width + 8)
+          .attr("height", bbox.height + 4)
+          .attr("rx", 3);
+      });
+
+      // ---- nodes ----
+      const nodeGroup = root.append("g").attr("class", "nodes");
+      const nodeSel = nodeGroup.selectAll("g.node")
+        .data(nodes, (d) => d.id)
+        .join("g")
+        .attr("class", "node")
+        .attr("id", (d) => `node-${d.id}`)
+        .attr("transform", (d) => `translate(${d.position.x},${d.position.y})`);
+
+      nodeSel.append("rect")
+        .attr("width", (d) => d.dimensions.width)
+        .attr("height", (d) => d.dimensions.height)
+        .attr("rx", 10)
+        .attr("fill", (d) => TYPE_COLORS[d.type] || TYPE_COLORS.default)
+        .attr("stroke", (d) => STATUS_STROKE[(d.data && d.data.status) || "default"] || STATUS_STROKE.default);
+
+      nodeSel.append("text")
+        .attr("x", (d) => d.dimensions.width / 2)
+        .attr("y", (d) => d.dimensions.height / 2)
+        .attr("text-anchor", "middle")
+        .attr("dominant-baseline", "middle")
+        .text((d) => (d.data && d.data.label) || d.id);
+
+      // ---- hover highlighting ----
+      function clearHighlight() {
+        nodeSel.classed("faded", false).classed("active", false);
+        edgeSel.classed("faded", false).classed("active", false);
+      }
+
+      function highlightNode(d) {
+        const nb = nodeNeighbors.get(d.id) || { nodes: new Set(), edges: new Set() };
+        nodeSel.classed("faded", (n) => n.id !== d.id && !nb.nodes.has(n.id));
+        nodeSel.classed("active", (n) => n.id === d.id || nb.nodes.has(n.id));
+        edgeSel.classed("faded", (e) => !nb.edges.has(e.id));
+        edgeSel.classed("active", (e) => nb.edges.has(e.id));
+      }
+
+      function highlightEdge(d) {
+        const nb = edgeNeighbors.get(d.id) || { nodes: new Set() };
+        nodeSel.classed("faded", (n) => !nb.nodes.has(n.id));
+        nodeSel.classed("active", (n) => nb.nodes.has(n.id));
+        edgeSel.classed("faded", (e) => e.id !== d.id);
+        edgeSel.classed("active", (e) => e.id === d.id);
+      }
+
+      nodeSel.on("mouseenter", (event, d) => highlightNode(d)).on("mouseleave", clearHighlight);
+      edgeSel.on("mouseenter", (event, d) => highlightEdge(d)).on("mouseleave", clearHighlight);
+
+      // ---- drag to reposition nodes ----
+      const drag = d3.drag()
+        .on("start", function () {
+          d3.select(this).raise().classed("dragging", true);
+        })
+        .on("drag", function (event, d) {
+          d.position.x += event.dx;
+          d.position.y += event.dy;
+          d3.select(this).attr("transform", `translate(${d.position.x},${d.position.y})`);
+          const nb = nodeNeighbors.get(d.id);
+          if (!nb) return;
+          nb.edges.forEach((edgeId) => {
+            const edgeDatum = edgeById.get(edgeId);
+            if (edgeDatum) updateEdgeGeometry(edgeDatum);
+          });
+        })
+        .on("end", function () {
+          d3.select(this).classed("dragging", false);
+        });
+
+      nodeSel.call(drag);
+    }
+
+    (async () => {
+      // paths are relative so this page also works when served as /diagram/<slug>/view
+      const meta = await fetchJson("./diagram.json");
+      if (meta) {
+       if (meta.jsonPath) {
+          const data = await fetchJson(meta.jsonPath);
+          if (data && Array.isArray(data.nodes) && data.nodes.length) {
+            renderDiagram(data);
+            return;
+          }
+        } else if (meta.svgPath) {
+          showSvgFallback(meta.svgPath);
+          return;
+        }
+        showMessage("No diagram data available.");
+        return;
+      }
+      // opened via file:// where fetch is blocked - use the embedded sample
+      if (EMBEDDED_DATA.nodes.length) {
+        renderDiagram(EMBEDDED_DATA);
+        return;
+      }
+      showMessage("No diagram data available.");
+    })();
+  </script>
+</body>
+</html>

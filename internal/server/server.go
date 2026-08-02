@@ -191,6 +191,14 @@ func CreateHttpServer(publicFS fs.FS, svc *diagram.Service) http.Handler {
 			}
 			http.NotFound(w, r)
 		})
+		// interactive d3.js viewer for a single diagram
+		mux.HandleFunc("/diagram/{slug}/view", func(w http.ResponseWriter, r *http.Request) {
+			if r.Method == http.MethodGet {
+				serveDiagramViewer(w, r, sub)
+				return
+			}
+			http.NotFound(w, r)
+		})
 		// All other routes, serve static content from embedded FS or /public/ folder
 		mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 
@@ -226,12 +234,51 @@ func CreateHttpServer(publicFS fs.FS, svc *diagram.Service) http.Handler {
 	return LogWriter(ResponseWriter(mux, publicFS))
 }
 
+// diagramViewerPath is the slug-agnostic d3.js renderer; it loads ./data.json
+// (or ./diagram.json) relative to the requested /diagram/{slug}/view URL.
+const diagramViewerPath = "diagram/view.html"
+
+func serveDiagramViewer(w http.ResponseWriter, r *http.Request, embedded fs.FS) {
+	slug := r.PathValue("slug")
+	if !validSlug(slug) {
+		http.NotFound(w, r)
+		return
+	}
+
+	publicRoot := helper.ResolvePublicRoot()
+	if info, err := os.Stat(filepath.Join(publicRoot, "diagram", slug)); err != nil || !info.IsDir() {
+		http.NotFound(w, r)
+		return
+	}
+
+	viewerPath := filepath.Join(publicRoot, filepath.FromSlash(diagramViewerPath))
+	if _, err := os.Stat(viewerPath); err == nil {
+		http.ServeFile(w, r, viewerPath)
+		return
+	}
+
+	data, err := fs.ReadFile(embedded, diagramViewerPath)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_, _ = w.Write(data)
+}
+
+func validSlug(slug string) bool {
+	if slug == "" || slug == "." || strings.Contains(slug, "..") || strings.Contains(slug, "/") || strings.Contains(slug, `\`) {
+		return false
+	}
+	return true
+}
+
 func serveDiagramRoute(w http.ResponseWriter, r *http.Request) {
 	publicRoot := helper.ResolvePublicRoot()
 	indexPath := filepath.Join(publicRoot, "diagram", "index.html")
 
 	slug := r.PathValue("slug")
-	if slug == "" || slug == "." || strings.Contains(slug, "..") || strings.Contains(slug, "/") {
+	if !validSlug(slug) {
 		http.ServeFile(w, r, indexPath)
 		return
 	}
