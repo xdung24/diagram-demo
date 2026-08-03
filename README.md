@@ -8,6 +8,7 @@ This demo is designed for software analysts who want to quickly create, explore,
 - **Explore Examples:** Browse ready-made diagrams to jumpstart your thinking.
 - **Describe & Generate:** Type a plain-language description (for example, "Show the onboarding flow with steps A → B → C") and let the app generate a diagram automatically.
 - **Live Preview:** See the diagram render instantly and iterate visually until it matches your mental model.
+- **View Diagram**: View the diagram in full screen.
 - **Export & Share:** Download SVG/PNG outputs to include in reports, presentations, or documentation.
 - **Multiple Diagram Styles:** Create flowcharts, BPMN process maps, and architecture sketches from the same interface.
 
